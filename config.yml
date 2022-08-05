@@ -5,6 +5,7 @@ script_options:
   TEST_MODE: True
   LOG_TRADES: True
   LOG_FILE: 'trades.txt'
+  EFFICIENCY_FILE: 'efficiency_log.txt'
 
   # Set this to true if you are accessing binance from within the United States of America
   # Need to change TLD

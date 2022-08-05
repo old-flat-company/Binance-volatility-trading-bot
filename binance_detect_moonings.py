@@ -408,9 +408,13 @@ def sell_coins():
 
                 # Log trade
                 if LOG_TRADES:
-                    profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume'])* (1-(TRADING_FEE*2)) # adjust for trading fee here
-                    write_log(f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange-(TRADING_FEE*2):.2f}%")
-                    session_profit=session_profit + (PriceChange-(TRADING_FEE*2))
+                    profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (1 - (TRADING_FEE * 2))  # adjust for trading fee here
+                    write_log(
+                        f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
+                    curr_unix_time = time.mktime(datetime.now().timetuple())
+                    efficiency_log(curr_unix_time=curr_unix_time,
+                                   efficiency_logline="+" if profit == 0.0 else "-")
+                    session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 
         # no action; print once every TIME_DIFFERENCE
@@ -459,6 +463,13 @@ def write_log(logline):
     with open(LOG_FILE,'a+') as f:
         f.write(timestamp + ' ' + logline + '\n')
 
+
+def efficiency_log(curr_unix_time=int(), efficiency_logline=''):
+    with open(EFFICIENCY_FILE, 'a+') as f:
+        out_line = '{0}\t{1}\n'.format(curr_unix_time, efficiency_logline)
+        f.write(out_line)
+
+
 if __name__ == '__main__':
 
     # Load arguments then parse settings
@@ -483,7 +494,10 @@ if __name__ == '__main__':
     # Load system vars
     TEST_MODE = parsed_config['script_options']['TEST_MODE']
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
+
     LOG_FILE = parsed_config['script_options'].get('LOG_FILE')
+    EFFICIENCY_FILE = parsed_config['script_options'].get('EFFICIENCY_FILE')
+
     DEBUG_SETTING = parsed_config['script_options'].get('DEBUG')
     AMERICAN_USER = parsed_config['script_options'].get('AMERICAN_USER')
 

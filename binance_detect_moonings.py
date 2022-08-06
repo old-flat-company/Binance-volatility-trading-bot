@@ -413,7 +413,7 @@ def sell_coins():
                         f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
                     curr_unix_time = time.mktime(datetime.now().timetuple())
                     efficiency_log(curr_unix_time=curr_unix_time,
-                                   efficiency_logline="+" if profit == 0.0 else "-")
+                                   efficiency_logline="+" if profit >= 0.0 else "-")
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 

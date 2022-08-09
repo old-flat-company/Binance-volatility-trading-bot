@@ -55,6 +55,7 @@ from helpers.handle_creds import (
     load_correct_creds, test_api_key
 )
 
+from calculate_efficiency import calculate_efficiency_lib
 
 # for colourful logging to the console
 class txcolors:
@@ -413,7 +414,7 @@ def sell_coins():
                         f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
                     curr_unix_time = time.mktime(datetime.now().timetuple())
                     efficiency_log(curr_unix_time=curr_unix_time,
-                                   efficiency_logline="+" if profit >= 0.0 else "-")
+                                   efficiency_result="+" if profit >= 0.0 else "-")
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 
@@ -464,9 +465,11 @@ def write_log(logline):
         f.write(timestamp + ' ' + logline + '\n')
 
 
-def efficiency_log(curr_unix_time=int(), efficiency_logline=''):
+def efficiency_log(curr_unix_time=int(), efficiency_result=''):
+    efficiency_coeff = calculate_efficiency_lib(efficiency_result)
+    curr_time = datetime.utcfromtimestamp(int(curr_unix_time)).strftime('%Y-%m-%d %H:%M:%S')
     with open(EFFICIENCY_FILE, 'a+') as f:
-        out_line = '{0}\t{1}\n'.format(curr_unix_time, efficiency_logline)
+        out_line = '{0}\t{1}\t{2}\t{3}\n'.format(curr_unix_time, efficiency_result, curr_time, efficiency_coeff)
         f.write(out_line)
 
 

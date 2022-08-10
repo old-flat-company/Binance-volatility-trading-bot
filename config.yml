@@ -76,3 +76,13 @@ trading_options:
     - signalsamplemod
     
   
+# calculate_efficiency block
+calculate_efficiency_options:
+
+  CHECKING_TIME: 3600  # in sec
+  STANDARD_COEFF: 3
+  MIN_NUM_RESULTS: 4
+  LAST_RESULT_SET: 3
+
+
+

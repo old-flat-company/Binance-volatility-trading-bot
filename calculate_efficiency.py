@@ -1,16 +1,33 @@
-from datetime import datetime
+import os
 import time
+from datetime import datetime
 
-CHECKING_TIME = 3600  # in sec
-STANDARD_COEFF = 3 / 1
-MIN_NUM_RESULTS = 4
+# CHECKING_TIME = 3600  # in sec
+# STANDARD_COEFF = 3 / 1
+# MIN_NUM_RESULTS = 4
+# LAST_RESULT_SET=3
 
-def calculate_positive_negative():
-    now_unix_time = int(time.mktime(datetime.now().timetuple()))
-    # int(line_data.strip().split('\t')[0])  -- unix time
-    # last 1 hour  data
-    last_data_list = [line_data.strip() for line_data in open("efficiency_log.txt", 'r')
-                      if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME]
+# Load helper modules
+from helpers.parameters import (
+    parse_args, load_config
+)
+# Load arguments then parse settings
+args = parse_args()
+DEFAULT_CONFIG_FILE = 'config.yml'
+config_file = args.config if args.config else DEFAULT_CONFIG_FILE
+parsed_config = load_config(config_file)
+
+TEST_MODE = parsed_config['script_options']['TEST_MODE']
+EFFICIENCY_FILE = parsed_config['script_options']['EFFICIENCY_FILE']
+
+CHECKING_TIME = parsed_config['calculate_efficiency_options']['CHECKING_TIME']
+STANDARD_COEFF = parsed_config['calculate_efficiency_options']['STANDARD_COEFF']
+MIN_NUM_RESULTS = parsed_config['calculate_efficiency_options']['MIN_NUM_RESULTS']
+LAST_RESULT_SET = parsed_config['calculate_efficiency_options']['LAST_RESULT_SET']
+
+
+
+def calculate_positive_negative(last_data_list=[]):
     positive_res = 0
     negative_res = 0
     for last_data in last_data_list:
@@ -21,9 +38,27 @@ def calculate_positive_negative():
             negative_res += 1
     return positive_res, negative_res
 
+def calculate_last_positive_negative():
+    now_unix_time = int(time.mktime(datetime.now().timetuple()))
+    # last results
+    last_data_list = [line_data.strip() for line_data in open(efficiency_log_path(), 'r')
+                      if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME][::-1][:LAST_RESULT_SET]
+    return calculate_positive_negative(last_data_list=last_data_list)
+
+
+
+def calculate_positive_negative_checking_time():
+    now_unix_time = int(time.mktime(datetime.now().timetuple()))
+    # int(line_data.strip().split('\t')[0])  -- unix time
+    # last 1 hour  data
+    last_data_list = [line_data.strip() for line_data in open(efficiency_log_path(), 'r')
+                      if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME]
+
+    return calculate_positive_negative(last_data_list=last_data_list)
+
 
 def calculate_efficiency():
-    positive_res, negative_res = calculate_positive_negative()
+    positive_res, negative_res = calculate_positive_negative_checking_time()
     sum_results = positive_res + negative_res
     if sum_results < MIN_NUM_RESULTS:
         return 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
@@ -32,7 +67,7 @@ def calculate_efficiency():
 
 
 def calculate_efficiency_lib(curr_res):
-    positive_res, negative_res = calculate_positive_negative()
+    positive_res, negative_res = calculate_positive_negative_checking_time()
     if curr_res == "+":
         positive_res += 1
     elif curr_res == "-":
@@ -45,6 +80,22 @@ def calculate_efficiency_lib(curr_res):
     else:
         curr_coeff = positive_res / STANDARD_COEFF
     return curr_coeff
+
+
+def efficiency_log_path():
+    efficiency_log_path = 'test_' + EFFICIENCY_FILE if TEST_MODE else EFFICIENCY_FILE
+    if not os.path.exists(efficiency_log_path):
+        with open(efficiency_log_path, 'w') as file:  # create a file
+            file.close()
+    return efficiency_log_path
+
+
+def efficiency_log(curr_unix_time=int(), efficiency_result=''):
+    efficiency_coeff = calculate_efficiency_lib(efficiency_result)
+    curr_time = datetime.utcfromtimestamp(int(curr_unix_time)).strftime('%Y-%m-%d %H:%M:%S')
+    with open(efficiency_log_path(), 'a+') as f:
+        out_line = '{0}\t{1}\t{2}\t{3}\n'.format(curr_unix_time, efficiency_result, curr_time, efficiency_coeff)
+        f.write(out_line)
 
 
 if __name__ == '__main__':

@@ -55,7 +55,7 @@ from helpers.handle_creds import (
     load_correct_creds, test_api_key
 )
 
-from calculate_efficiency import calculate_efficiency_lib
+from calculate_efficiency import efficiency_log_path,efficiency_log
 
 # for colourful logging to the console
 class txcolors:
@@ -465,12 +465,6 @@ def write_log(logline):
         f.write(timestamp + ' ' + logline + '\n')
 
 
-def efficiency_log(curr_unix_time=int(), efficiency_result=''):
-    efficiency_coeff = calculate_efficiency_lib(efficiency_result)
-    curr_time = datetime.utcfromtimestamp(int(curr_unix_time)).strftime('%Y-%m-%d %H:%M:%S')
-    with open(EFFICIENCY_FILE, 'a+') as f:
-        out_line = '{0}\t{1}\t{2}\t{3}\n'.format(curr_unix_time, efficiency_result, curr_time, efficiency_coeff)
-        f.write(out_line)
 
 
 if __name__ == '__main__':

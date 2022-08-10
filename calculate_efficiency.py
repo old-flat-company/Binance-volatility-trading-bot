@@ -40,7 +40,10 @@ def calculate_efficiency_lib(curr_res):
     sum_results = positive_res + negative_res
     if sum_results < MIN_NUM_RESULTS:
         return 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
-    curr_coeff = positive_res / negative_res / STANDARD_COEFF
+    if negative_res:
+        curr_coeff = positive_res / negative_res / STANDARD_COEFF
+    else:
+        curr_coeff = positive_res / STANDARD_COEFF
     return curr_coeff
 
 

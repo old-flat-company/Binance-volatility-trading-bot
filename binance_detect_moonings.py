@@ -564,10 +564,16 @@ if __name__ == '__main__':
     if TEST_MODE:
         coins_bought_file_path = 'test_' + coins_bought_file_path
 
-    # if saved coins_bought json file exists and it's not empty then load it
-    if os.path.isfile(coins_bought_file_path) and os.stat(coins_bought_file_path).st_size!= 0:
-        with open(coins_bought_file_path) as file:
-                coins_bought = json.load(file)
+    # # if saved coins_bought json file exists and it's not empty then load it
+    # if os.path.isfile(coins_bought_file_path) and os.stat(coins_bought_file_path).st_size!= 0:
+    #     with open(coins_bought_file_path) as file:
+    #             coins_bought = json.load(file)
+
+
+    # if coins_bought json file exists and it's not empty --clean it
+    if os.path.isfile(coins_bought_file_path):
+        with open(coins_bought_file_path,'w') as file:
+            file.close()
 
     print('Press Ctrl-Q to stop the script')
 

@@ -55,7 +55,7 @@ from helpers.handle_creds import (
     load_correct_creds, test_api_key
 )
 
-from calculate_efficiency import efficiency_log_path,efficiency_log
+from calculate_efficiency import efficiency_log
 
 # for colourful logging to the console
 class txcolors:
@@ -541,11 +541,6 @@ if __name__ == '__main__':
     # Use CUSTOM_LIST symbols if CUSTOM_LIST is set to True
     if CUSTOM_LIST: tickers=[line.strip() for line in open(TICKERS_LIST)]
 
-    # try to load all the coins bought by the bot if the file exists and is not empty
-    coins_bought = {}
-
-    # path to the saved coins_bought file
-    coins_bought_file_path = 'coins_bought.json'
 
     # rolling window of prices; cyclical queue
     historical_prices = [None] * (TIME_DIFFERENCE * RECHECK_INTERVAL)
@@ -554,9 +549,19 @@ if __name__ == '__main__':
     # prevent including a coin in volatile_coins if it has already appeared there less than TIME_DIFFERENCE minutes ago
     volatility_cooloff = {}
 
+
+    # try to load all the coins bought by the bot if the file exists and is not empty
+    coins_bought = {}
+    # path to the saved coins_bought file
+    coins_bought_file_path = 'coins_bought.json'
     # use separate files for testing and live trading
     if TEST_MODE:
         coins_bought_file_path = 'test_' + coins_bought_file_path
+
+    # if coins_bought json file exists and it's not empty --clean it
+    if os.path.isfile(coins_bought_file_path):
+        with open(coins_bought_file_path,'w') as file:
+            file.close()
 
     # # if saved coins_bought json file exists and it's not empty then load it
     # if os.path.isfile(coins_bought_file_path) and os.stat(coins_bought_file_path).st_size!= 0:
@@ -564,10 +569,7 @@ if __name__ == '__main__':
     #             coins_bought = json.load(file)
 
 
-    # if coins_bought json file exists and it's not empty --clean it
-    if os.path.isfile(coins_bought_file_path):
-        with open(coins_bought_file_path,'w') as file:
-            file.close()
+
 
     print('Press Ctrl-Q to stop the script')
 

@@ -352,8 +352,47 @@ def buy():
     return orders, last_price, volume
 
 
+def core_sell(coin='', LastPrice=None, BuyPrice=None, PriceChange=None, coins_sold=None):
+    # try to create a real order
+    global hsp_head, session_profit
+    try:
+        if not TEST_MODE:
+            sell_coins_limit = client.create_order(symbol=coin,
+                                                   side='SELL',
+                                                   type='MARKET',
+                                                   quantity=coins_bought[coin]['volume']
+                                                   )
+
+    # error handling here in case position cannot be placed
+    except Exception as e:
+        print(e)
+
+    # run the else block if coin has been sold and create a dict for each coin sold
+    else:
+        coins_sold[coin] = coins_bought[coin]
+
+        # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
+        volatility_cooloff[coin] = datetime.now()
+
+        # Log trade
+        if LOG_TRADES:
+            profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (
+                    1 - (TRADING_FEE * 2))  # adjust for trading fee here
+            write_log(
+                f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
+            curr_unix_time = time.mktime(datetime.now().timetuple())
+            efficiency_log(curr_unix_time=curr_unix_time,
+                           efficiency_result="+" if profit >= 0.0 else "-")
+            session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
+    return coins_sold
+
+
+# def sell_coins(coins_close_manually=[]):
 def sell_coins():
     '''sell coins that have reached the STOP LOSS or TAKE PROFIT threshold'''
+    coins_bought_list = list(coins_bought)
+    # if coins_close_manually:
+    #     coins_bought_list = coins_close_manually
 
     global hsp_head, session_profit
 
@@ -361,7 +400,31 @@ def sell_coins():
     #last_price = get_price(add_to_historical=True) # don't populate rolling window
     coins_sold = {}
 
-    for coin in list(coins_bought):
+    # {
+    #     "BTCSTUSDT": {
+    #         "symbol": "BTCSTUSDT",
+    #         "orderid": 0,
+    #         "timestamp": 1660264315.045158,
+    #         "bought_at": "25.99000000",
+    #         "volume": 7.7,
+    #         "stop_loss": -2.5,
+    #         "take_profit": 0.8
+    #     }
+    # }
+
+
+
+    # #---------------------------------
+    # if coins_close_manually:
+    #     coins_close_manually_dict={}
+    #     for coin in list(coins_bought):
+    #         if
+    #---------------------------------
+    # coins_bought ={'BTCSTUSDT': {'symbol': 'BTCSTUSDT', 'orderid': 0, 'timestamp': 1660264315.045158, 'bought_at': '25.99000000',
+    #                'volume': 7.7, 'stop_loss': -2.5, 'take_profit': 0.8}}
+    # list(coins_bought) ==['BTCSTUSDT']
+
+    for coin in coins_bought_list:
         # define stop loss and take profit
         TP = float(coins_bought[coin]['bought_at']) + (float(coins_bought[coin]['bought_at']) * coins_bought[coin]['take_profit']) / 100
         SL = float(coins_bought[coin]['bought_at']) + (float(coins_bought[coin]['bought_at']) * coins_bought[coin]['stop_loss']) / 100
@@ -371,6 +434,7 @@ def sell_coins():
         BuyPrice = float(coins_bought[coin]['bought_at'])
         PriceChange = float((LastPrice - BuyPrice) / BuyPrice * 100)
 
+        # if not coins_close_manually:
         # check that the price is above the take profit and readjust SL and TP accordingly if trialing stop loss used
         if LastPrice > TP and USE_TRAILING_STOP_LOSS:
 
@@ -418,12 +482,18 @@ def sell_coins():
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 
+        # else:
+        #     coins_sold = core_sell(coin='', LastPrice=LastPrice, BuyPrice=BuyPrice,
+        #                            PriceChange=PriceChange, coins_sold=coins_sold)
+        #
+        #     continue
+
         # no action; print once every TIME_DIFFERENCE
         if hsp_head == 1:
             if len(coins_bought) > 0:
                 print(f'TP or SL not yet reached, not selling {coin} for now {BuyPrice} - {LastPrice} : {txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}{PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}')
 
-    if hsp_head == 1 and len(coins_bought) == 0: print(f'Not holding any coins')
+    if hsp_head == 1 and len(coins_bought_list) == 0: print(f'Not holding any coins')
  
     return coins_sold
 
@@ -465,6 +535,18 @@ def write_log(logline):
         f.write(timestamp + ' ' + logline + '\n')
 
 
+def manage_in_running():
+    DEFAULT_CONFIG_FILE ='config.yml'
+    args = parse_args()
+    config_file = args.config if args.config else DEFAULT_CONFIG_FILE
+    parsed_config = load_config(config_file)
+    manage_file_path = parsed_config['manage_in_running_options']['MANAGE_FILE']
+    if os.path.isfile(manage_file_path) and os.stat(manage_file_path).st_size != 0:
+        with open(manage_file_path) as manage_file:
+            manage_in_running_data = json.load(manage_file)
+            close_pairs = manage_in_running_data['commands']['close_pairs']
+            stop_main_script_manually= manage_in_running_data['commands']['stop_main_script_manually']
+        return close_pairs, stop_main_script_manually
 
 
 if __name__ == '__main__':
@@ -613,8 +695,10 @@ if __name__ == '__main__':
     CONNECTION_ERROR_COUNT = 0
     while True:
         try:
+            coins_close_manually, stop_main_script_manually = manage_in_running()
             orders, last_price, volume = buy()
             update_portfolio(orders, last_price, volume)
+            # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
             coins_sold = sell_coins()
             remove_from_portfolio(coins_sold)
         except ReadTimeout as rt:

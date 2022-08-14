@@ -84,8 +84,8 @@ calculate_efficiency_options:
   MIN_NUM_RESULTS: 4
   LAST_RESULT_SET: 3
 
-manage_in_running:
+manage_in_running_options:
   # this json file can manage this script when it running
-  MANAGE FILE: 'manage_manually.json'
+  MANAGE_FILE: 'manage_manually.json'
 
 

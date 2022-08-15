@@ -309,26 +309,40 @@ def buy():
             print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
 
             if TEST_MODE:
-                orders[coin] = [{
-                    'symbol': coin,
-                    'orderId': 0,
-                    'time': datetime.now().timestamp()
-                }]
+                if STATUS == 'main':
+                    efficiency_coef, positive_set = table_calculate_efficiency_read_data(conn=connect())
+                    if float(efficiency_coef) > 0.8 or positive_set:
 
-                # Log trade
-                if LOG_TRADES:
-                    write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
-
+                        orders[coin] = [{
+                            'symbol': coin,
+                            'orderId': 0,
+                            'time': datetime.now().timestamp()
+                        }]
+                        # Log trade
+                        if LOG_TRADES:
+                            write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                elif STATUS == 'statistics':
+                    orders[coin] = [{
+                        'symbol': coin,
+                        'orderId': 0,
+                        'time': datetime.now().timestamp()
+                    }]
+                    # Log trade
+                    if LOG_TRADES:
+                        write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
                 continue
 
             # try to create a real order if the test orders did not raise an exception
             try:
-                buy_limit = client.create_order(
-                    symbol = coin,
-                    side = 'BUY',
-                    type = 'MARKET',
-                    quantity = volume[coin]
-                )
+                if STATUS == 'main':
+                    efficiency_coef, positive_set = table_calculate_efficiency_read_data(conn=connect())
+                    if float(efficiency_coef) > 0.8 or positive_set:
+                        buy_limit = client.create_order(
+                            symbol=coin,
+                            side='BUY',
+                            type='MARKET',
+                            quantity=volume[coin]
+                        )
 
             # error handling here in case position cannot be placed
             except Exception as e:
@@ -584,6 +598,7 @@ if __name__ == '__main__':
     # Load system vars
     TEST_MODE = parsed_config['script_options']['TEST_MODE']
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
+    STATUS = parsed_config['script_options'].get('STATUS')
 
     LOG_FILE = parsed_config['script_options'].get('LOG_FILE')
     EFFICIENCY_FILE = parsed_config['script_options'].get('EFFICIENCY_FILE')

@@ -6,6 +6,11 @@ script_options:
   LOG_TRADES: True
   LOG_FILE: 'trades.txt'
   EFFICIENCY_FILE: 'efficiency_log.txt'
+  #two variants
+  STATUS: main
+#  STATUS: statistics
+
+
 
   # Set this to true if you are accessing binance from within the United States of America
   # Need to change TLD
@@ -94,3 +99,5 @@ db_connect_options:
   DB_NAME: 'binance_mooning'
   DB_USER: 'nikita'
   DB_PASSWORD: '1000g0001'
+
+

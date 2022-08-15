@@ -44,7 +44,7 @@ def calculate_last_positive_negative():
     last_data_list = [line_data.strip() for line_data in open(efficiency_log_path(), 'r')
                       if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME][::-1][:LAST_RESULT_SET]
     positive_res, negative_res =calculate_positive_negative(last_data_list=last_data_list)
-    return True if positive_res== LAST_RESULT_SET  else False
+    return True if positive_res >= LAST_RESULT_SET else False
 
 
 
@@ -75,12 +75,12 @@ def calculate_efficiency_lib(curr_res):
         negative_res += 1
     sum_results = positive_res + negative_res
     if sum_results < MIN_NUM_RESULTS:
-        return 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
+        return '0.0' #'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
     if negative_res:
         curr_coeff = positive_res / negative_res / STANDARD_COEFF
     else:
         curr_coeff = positive_res / STANDARD_COEFF
-    return curr_coeff
+    return str(curr_coeff)
 
 
 def efficiency_log_path():

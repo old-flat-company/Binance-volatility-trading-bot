@@ -89,3 +89,8 @@ manage_in_running_options:
   MANAGE_FILE: 'manage_manually.json'
 
 
+db_connect_options:
+  DB_HOST: 'localhost'
+  DB_NAME: 'binance_mooning'
+  DB_USER: 'nikita'
+  DB_PASSWORD: '1000g0001'

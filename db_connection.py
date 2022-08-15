@@ -1,9 +1,19 @@
 import psycopg2
 
-DB_HOST = 'localhost'
-DB_NAME = 'binance_mooning'
-DB_USER = 'nikita'
-DB_PASSWORD = '1000g0001'
+# Load helper modules
+from helpers.parameters import (
+    parse_args, load_config
+)
+
+args = parse_args()
+DEFAULT_CONFIG_FILE = 'config.yml'
+config_file = args.config if args.config else DEFAULT_CONFIG_FILE
+parsed_config = load_config(config_file)
+
+DB_HOST = parsed_config['db_connect_options']['DB_HOST']
+DB_NAME = parsed_config['db_connect_options']['DB_NAME']
+DB_USER = parsed_config['db_connect_options']['DB_USER']
+DB_PASSWORD = parsed_config['db_connect_options']['DB_PASSWORD']
 
 
 def connect():

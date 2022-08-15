@@ -23,7 +23,7 @@ def connect():
         return False
 
 
-def read_table_data(conn=None):
+def script_management_read_data(conn=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -33,8 +33,6 @@ def read_table_data(conn=None):
         custom_cr = conn.cursor()
 
         # execute a statement
-        # custom_query = "INSERT ... "
-        # custom_query = 'SELECT id,upload_audio, upload_text,DATE(date_posted) AS date_posted,out_file_name FROM public.blog_post WHERE length(out_file_name) = 0 ORDER BY date_posted;'
         custom_query = 'SELECT close_pairs, stop_script_manually FROM public.script_management WHERE id = 1;'
         custom_cr.execute(custom_query)
         unprocessed_data_list = custom_cr.fetchall()
@@ -49,7 +47,7 @@ def read_table_data(conn=None):
         return False
 
 
-def write_data_in_table(conn=None, close_pairs=None, stop_script_manually=None):
+def script_management_write_data(conn=None, close_pairs=None, stop_script_manually=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -87,7 +85,65 @@ def write_data_in_table(conn=None, close_pairs=None, stop_script_manually=None):
         return False
 
 
+def calculate_efficiency_read_data(conn=None):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    try:
+        # create a cursor
+        custom_cr = conn.cursor()
+        # execute a statement
+        custom_query = 'SELECT efficiency_coef, positive_set FROM public.calculate_efficiency WHERE id = 1;'
+        custom_cr.execute(custom_query)
+        unprocessed_data_list = custom_cr.fetchall()
+        efficiency_coef, positive_set = unprocessed_data_list[0]
+        custom_cr.close()
+        return efficiency_coef, positive_set
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return False
+
+
+def calculate_efficiency_write_data(conn=None, efficiency_coef=None, positive_set=None):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    # create a cursor
+    custom_cr = conn.cursor()
+    try:
+
+        if efficiency_coef is not None or positive_set is not None:
+            custom_query = 'UPDATE public.calculate_efficiency SET '
+            # ------efficiency_coef  block---------------------------
+            if efficiency_coef:
+                custom_query += 'efficiency_coef = ' + "'" + efficiency_coef + "'" + ', '
+
+            # -----------positive_set block--------------------------
+            if positive_set == False:
+                custom_query += 'positive_set = false '
+            elif positive_set:
+                custom_query += 'positive_set = true '
+            elif positive_set == None:
+                custom_query = custom_query[:-2] + ' '  # without comma',' +  empty space
+            # ------------------define id block----------------------
+            custom_query += 'WHERE id = 1;'
+            custom_cr.execute(custom_query)
+
+            conn.commit()
+            custom_cr.close()
+            return True
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        custom_cr.close()
+        return False
+
+
 if __name__ == '__main__':
     connect = connect()
-    print(read_table_data(conn=connect))
-    write_data_in_table(conn=connect, close_pairs=['test6'])
+    print(script_management_read_data(conn=connect))
+    script_management_write_data(conn=connect, close_pairs=['test6'])
+
+    print(calculate_efficiency_read_data(conn=connect))
+    calculate_efficiency_write_data(conn=connect, efficiency_coef='1.7', positive_set=True)

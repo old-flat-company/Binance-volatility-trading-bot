@@ -33,7 +33,7 @@ def connect():
         return False
 
 
-def script_management_read_data(conn=None):
+def table_script_management_read_data(conn=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -57,7 +57,7 @@ def script_management_read_data(conn=None):
         return False
 
 
-def script_management_write_data(conn=None, close_pairs=None, stop_script_manually=None):
+def table_script_management_write_data(conn=None, close_pairs=None, stop_script_manually=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -95,7 +95,7 @@ def script_management_write_data(conn=None, close_pairs=None, stop_script_manual
         return False
 
 
-def calculate_efficiency_read_data(conn=None):
+def table_calculate_efficiency_read_data(conn=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -115,7 +115,7 @@ def calculate_efficiency_read_data(conn=None):
         return False
 
 
-def calculate_efficiency_write_data(conn=None, efficiency_coef=None, positive_set=None):
+def table_calculate_efficiency_write_data(conn=None, efficiency_coef=None, positive_set=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -152,8 +152,8 @@ def calculate_efficiency_write_data(conn=None, efficiency_coef=None, positive_se
 
 if __name__ == '__main__':
     connect = connect()
-    print(script_management_read_data(conn=connect))
-    script_management_write_data(conn=connect, close_pairs=['test6'])
+    print(table_script_management_read_data(conn=connect))
+    table_script_management_write_data(conn=connect, close_pairs=['test6'])
 
-    print(calculate_efficiency_read_data(conn=connect))
-    calculate_efficiency_write_data(conn=connect, efficiency_coef='1.7', positive_set=True)
+    print(table_calculate_efficiency_read_data(conn=connect))
+    table_calculate_efficiency_write_data(conn=connect, efficiency_coef='1.7', positive_set=True)

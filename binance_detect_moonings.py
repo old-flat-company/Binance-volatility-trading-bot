@@ -55,7 +55,14 @@ from helpers.handle_creds import (
     load_correct_creds, test_api_key
 )
 
-from calculate_efficiency import efficiency_log
+from calculate_efficiency import (efficiency_log,
+                                  calculate_efficiency_lib,
+                                  calculate_last_positive_negative)
+from db_connection import (connect,
+                           table_script_management_read_data,
+                           table_script_management_write_data,
+                           table_calculate_efficiency_read_data,
+                           table_calculate_efficiency_write_data)
 
 # for colourful logging to the console
 class txcolors:
@@ -479,6 +486,10 @@ def sell_coins():
                     curr_unix_time = time.mktime(datetime.now().timetuple())
                     efficiency_log(curr_unix_time=curr_unix_time,
                                    efficiency_result="+" if profit >= 0.0 else "-")
+
+                    table_calculate_efficiency_write_data(conn=connect(),
+                                                          efficiency_coef=calculate_efficiency_lib(curr_res="+" if profit >= 0.0 else "-"),
+                                                          positive_set=calculate_last_positive_negative())
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 

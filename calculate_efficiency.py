@@ -43,7 +43,8 @@ def calculate_last_positive_negative():
     # last results
     last_data_list = [line_data.strip() for line_data in open(efficiency_log_path(), 'r')
                       if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME][::-1][:LAST_RESULT_SET]
-    return calculate_positive_negative(last_data_list=last_data_list)
+    positive_res, negative_res =calculate_positive_negative(last_data_list=last_data_list)
+    return True if positive_res== LAST_RESULT_SET  else False
 
 
 

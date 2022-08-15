@@ -721,7 +721,7 @@ if __name__ == '__main__':
     CONNECTION_ERROR_COUNT = 0
     while True:
         try:
-            coins_close_manually, stop_main_script_manually = manage_in_running()
+            # coins_close_manually, stop_main_script_manually = manage_in_running()
             orders, last_price, volume = buy()
             update_portfolio(orders, last_price, volume)
             # coins_sold = sell_coins(coins_close_manually=coins_close_manually)

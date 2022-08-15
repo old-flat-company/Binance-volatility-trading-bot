@@ -11,6 +11,7 @@ from datetime import datetime
 from helpers.parameters import (
     parse_args, load_config
 )
+
 # Load arguments then parse settings
 args = parse_args()
 DEFAULT_CONFIG_FILE = 'config.yml'
@@ -26,7 +27,6 @@ MIN_NUM_RESULTS = parsed_config['calculate_efficiency_options']['MIN_NUM_RESULTS
 LAST_RESULT_SET = parsed_config['calculate_efficiency_options']['LAST_RESULT_SET']
 
 
-
 def calculate_positive_negative(last_data_list=[]):
     positive_res = 0
     negative_res = 0
@@ -38,14 +38,17 @@ def calculate_positive_negative(last_data_list=[]):
             negative_res += 1
     return positive_res, negative_res
 
+
 def calculate_last_positive_negative():
     now_unix_time = int(time.mktime(datetime.now().timetuple()))
     # last results
     last_data_list = [line_data.strip() for line_data in open(efficiency_log_path(), 'r')
-                      if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME][::-1][:LAST_RESULT_SET]
-    positive_res, negative_res =calculate_positive_negative(last_data_list=last_data_list)
-    return True if positive_res >= LAST_RESULT_SET else False
-
+                      if now_unix_time - int(float(line_data.strip().split('\t')[0])) <= CHECKING_TIME]
+    if len(last_data_list) >= LAST_RESULT_SET:
+        last_data_list = last_data_list[::-1][:LAST_RESULT_SET]
+        positive_res, negative_res = calculate_positive_negative(last_data_list=last_data_list)
+        return True if positive_res >= LAST_RESULT_SET else False
+    return False
 
 
 def calculate_positive_negative_checking_time():
@@ -75,7 +78,7 @@ def calculate_efficiency_lib(curr_res):
         negative_res += 1
     sum_results = positive_res + negative_res
     if sum_results < MIN_NUM_RESULTS:
-        return '0.0' #'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
+        return '0.0'  # 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
     if negative_res:
         curr_coeff = positive_res / negative_res / STANDARD_COEFF
     else:

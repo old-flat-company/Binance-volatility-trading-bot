@@ -104,18 +104,23 @@ def table_calculate_efficiency_read_data(conn=None):
         # create a cursor
         custom_cr = conn.cursor()
         # execute a statement
-        custom_query = 'SELECT efficiency_coef, positive_set FROM public.calculate_efficiency WHERE id = 1;'
+        custom_query = 'SELECT efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time FROM public.calculate_efficiency WHERE id = 1;'
         custom_cr.execute(custom_query)
         unprocessed_data_list = custom_cr.fetchall()
-        efficiency_coef, positive_set = unprocessed_data_list[0]
+        efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = unprocessed_data_list[0]
         custom_cr.close()
-        return efficiency_coef, positive_set
+        return efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return False
+        return False, False, False, False
 
 
-def table_calculate_efficiency_write_data(conn=None, efficiency_coef=None, positive_set=None):
+def table_calculate_efficiency_write_data(conn=None,
+                                          efficiency_coef=None,
+                                          positive_set=None,
+                                          efficiency_coef_processed_time=None,
+                                          positive_set_processed_time=None
+                                          ):
     '''
     :param conn:  DB connection object
     :return:
@@ -139,6 +144,13 @@ def table_calculate_efficiency_write_data(conn=None, efficiency_coef=None, posit
                 custom_query = custom_query[:-2] + ' '  # without comma',' +  empty space
             # ------------------define id block----------------------
             custom_query += 'WHERE id = 1;'
+
+            #-------custom_query  for  processed_time data ----------
+            if efficiency_coef_processed_time is not None and positive_set_processed_time is not None:
+                custom_query += " UPDATE public.calculate_efficiency SET efficiency_coef_processed_time = '%s', positive_set_processed_time = '%s' WHERE id = 1;" % (
+                    efficiency_coef_processed_time,
+                    positive_set_processed_time)
+
             custom_cr.execute(custom_query)
 
             conn.commit()
@@ -152,8 +164,12 @@ def table_calculate_efficiency_write_data(conn=None, efficiency_coef=None, posit
 
 if __name__ == '__main__':
     connect = connect()
-    print(table_script_management_read_data(conn=connect))
-    table_script_management_write_data(conn=connect, close_pairs=['test6'])
-
+    # print(table_script_management_read_data(conn=connect))
+    # table_script_management_write_data(conn=connect, close_pairs=['test6'])
+    #
     print(table_calculate_efficiency_read_data(conn=connect))
-    table_calculate_efficiency_write_data(conn=connect, efficiency_coef='1.7', positive_set=True)
+    table_calculate_efficiency_write_data(conn=connect, efficiency_coef='1.9',
+                                          positive_set=False,
+                                          efficiency_coef_processed_time=str(2660640838.0),
+                                          positive_set_processed_time=str(1660640838.0)
+                                          )

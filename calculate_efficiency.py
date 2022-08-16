@@ -47,8 +47,8 @@ def calculate_last_positive_negative():
     if len(last_data_list) >= LAST_RESULT_SET:
         last_data_list = last_data_list[::-1][:LAST_RESULT_SET]
         positive_res, negative_res = calculate_positive_negative(last_data_list=last_data_list)
-        return True if positive_res >= LAST_RESULT_SET else False
-    return False
+        return (True, now_unix_time) if positive_res >= LAST_RESULT_SET else (False, now_unix_time)
+    return (False, now_unix_time)
 
 
 def calculate_positive_negative_checking_time():
@@ -83,7 +83,10 @@ def calculate_efficiency_lib(curr_res):
         curr_coeff = positive_res / negative_res / STANDARD_COEFF
     else:
         curr_coeff = positive_res / STANDARD_COEFF
-    return str(curr_coeff)
+
+    curr_unix_time = time.mktime(datetime.now().timetuple())
+    return str(curr_coeff), str(curr_unix_time)
+
 
 
 def efficiency_log_path():

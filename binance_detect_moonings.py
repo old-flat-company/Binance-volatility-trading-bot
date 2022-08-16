@@ -307,11 +307,13 @@ def buy():
         # only buy if the there are no active trades on the coin
         if coin not in coins_bought:
             print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
-
+            curr_unix_time = time.mktime(datetime.now().timetuple())
+            curr_minus_delta_time = curr_unix_time - 20 * 60
             if TEST_MODE:
                 if STATUS == 'main':
-                    efficiency_coef, positive_set = table_calculate_efficiency_read_data(conn=connect())
-                    if float(efficiency_coef) > 0.8 or positive_set:
+                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
+                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
                         orders[coin] = [{
                             'symbol': coin,
@@ -335,8 +337,9 @@ def buy():
             # try to create a real order if the test orders did not raise an exception
             try:
                 if STATUS == 'main':
-                    efficiency_coef, positive_set = table_calculate_efficiency_read_data(conn=connect())
-                    if float(efficiency_coef) > 0.8 or positive_set:
+                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
+                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
                         buy_limit = client.create_order(
                             symbol=coin,
                             side='BUY',
@@ -501,9 +504,13 @@ def sell_coins():
                     efficiency_log(curr_unix_time=curr_unix_time,
                                    efficiency_result="+" if profit >= 0.0 else "-")
 
+                    efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res="+" if profit >= 0.0 else "-")
+                    positive_set, positive_set_processed_time = calculate_last_positive_negative()
                     table_calculate_efficiency_write_data(conn=connect(),
-                                                          efficiency_coef=calculate_efficiency_lib(curr_res="+" if profit >= 0.0 else "-"),
-                                                          positive_set=calculate_last_positive_negative())
+                                                          efficiency_coef=efficiency_coef,
+                                                          efficiency_coef_processed_time=str(efficiency_coef_processed_time),
+                                                          positive_set=positive_set,
+                                                          positive_set_processed_time=str(positive_set_processed_time))
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 

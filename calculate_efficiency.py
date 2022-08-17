@@ -72,19 +72,19 @@ def calculate_efficiency():
 
 def calculate_efficiency_lib(curr_res):
     positive_res, negative_res = calculate_positive_negative_checking_time()
+    curr_unix_time = time.mktime(datetime.now().timetuple())
     if curr_res == "+":
         positive_res += 1
     elif curr_res == "-":
         negative_res += 1
     sum_results = positive_res + negative_res
     if sum_results < MIN_NUM_RESULTS:
-        return '0.0'  # 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
+        return '0.0', str(curr_unix_time)  # 'It is too little number of results  during last 1 hour: {0}'.format(sum_results)
     if negative_res:
         curr_coeff = positive_res / negative_res / STANDARD_COEFF
     else:
         curr_coeff = positive_res / STANDARD_COEFF
 
-    curr_unix_time = time.mktime(datetime.now().timetuple())
     return str(curr_coeff), str(curr_unix_time)
 
 

@@ -161,15 +161,85 @@ def table_calculate_efficiency_write_data(conn=None,
         custom_cr.close()
         return False
 
+#-------------------------------------------
+
+def table_last_sold_pairs_data_read_data(conn=None):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    try:
+        custom_cr = conn.cursor()
+        custom_query = 'SELECT id, pair_name, last_sold_time FROM public.last_sold_pairs_data;'
+        custom_cr.execute(custom_query)
+        unprocessed_data_list = custom_cr.fetchall()
+        custom_cr.close()
+        return unprocessed_data_list
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return [False, False, False]
+
+
+def table_last_sold_pairs_data_write_new_data(conn=None,
+                                              pair_name=None,
+                                              last_sold_time=None
+                                              ):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    # create a cursor
+    custom_cr = conn.cursor()
+    try:
+        if pair_name is not None and last_sold_time is not None:
+            custom_query = "INSERT INTO public.last_sold_pairs_data (pair_name, last_sold_time) VALUES ('%s', '%s');" % (
+                pair_name,
+                last_sold_time)
+            custom_cr.execute(custom_query)
+            conn.commit()
+            custom_cr.close()
+            return True
+        else:
+            return False
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        custom_cr.close()
+        return False
+
+
+def table_last_sold_pairs_data_del_old_data(conn=None, ids=[]):
+    # create a cursor
+    custom_cr = conn.cursor()
+    try:
+        if ids:
+            query_ids_list = str(tuple(ids)) if len(ids) > 1 else str(tuple(ids))[:-2] + ')'
+            custom_query = "DELETE FROM public.last_sold_pairs_data WHERE id IN " + query_ids_list + ";"
+            custom_cr.execute(custom_query)
+            conn.commit()
+            custom_cr.close()
+            return True
+        else:
+            return False
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        custom_cr.close()
+        return False
+
 
 if __name__ == '__main__':
     connect = connect()
     # print(table_script_management_read_data(conn=connect))
     # table_script_management_write_data(conn=connect, close_pairs=['test6'])
-    #
-    print(table_calculate_efficiency_read_data(conn=connect))
-    table_calculate_efficiency_write_data(conn=connect, efficiency_coef='1.9',
-                                          positive_set=False,
-                                          efficiency_coef_processed_time=str(2660640838.0),
-                                          positive_set_processed_time=str(1660640838.0)
-                                          )
+
+    # print(table_calculate_efficiency_read_data(conn=connect))
+    # table_calculate_efficiency_write_data(conn=connect, efficiency_coef='1.9',
+    #                                       positive_set=False,
+    #                                       efficiency_coef_processed_time=str(2660640838.0),
+    #                                       positive_set_processed_time=str(1660640838.0)
+    #                                       )
+
+    # print(table_last_sold_pairs_data_read_data(conn=connect))
+    # table_last_sold_pairs_data_write_new_data(conn=connect,
+    #                                           pair_name='test8_name',
+    #                                           last_sold_time='test8_time')
+    # table_last_sold_pairs_data_del_old_data(conn=connect, ids=[4, 5])

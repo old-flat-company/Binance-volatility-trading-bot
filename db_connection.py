@@ -180,6 +180,30 @@ def table_last_sold_pairs_data_read_data(conn=None):
         return [False, False, False]
 
 
+def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    try:
+        custom_cr = conn.cursor()
+        if pair_names:
+            query_pair_names = ', '.join(["'" + pair_name + "'" for pair_name in pair_names])
+            custom_query = 'SELECT id, pair_name, last_sold_time FROM public.last_sold_pairs_data  WHERE  pair_name IN (%s);' % query_pair_names
+            custom_cr.execute(custom_query)
+            unprocessed_data_list = custom_cr.fetchall()
+            custom_cr.close()
+            return unprocessed_data_list
+        else:
+            return []
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return []
+
+
+
+
+
 def table_last_sold_pairs_data_write_new_data(conn=None,
                                               pair_name=None,
                                               last_sold_time=None
@@ -242,4 +266,7 @@ if __name__ == '__main__':
     # table_last_sold_pairs_data_write_new_data(conn=connect,
     #                                           pair_name='test8_name',
     #                                           last_sold_time='test8_time')
+
+    print(table_last_sold_pairs_data_read_data_by_pair_name(conn=connect, pair_names=['test8_name']))
+
     # table_last_sold_pairs_data_del_old_data(conn=connect, ids=[4, 5])

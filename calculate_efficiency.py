@@ -97,9 +97,8 @@ def efficiency_log_path():
     return efficiency_log_path
 
 
-def efficiency_log(curr_unix_time=int(), efficiency_result=''):
-    efficiency_coeff = calculate_efficiency_lib(efficiency_result)
-    curr_time = datetime.utcfromtimestamp(int(curr_unix_time)).strftime('%Y-%m-%d %H:%M:%S')
+def efficiency_log(curr_unix_time=int(), efficiency_result='', efficiency_coeff=None):
+    curr_time = datetime.utcfromtimestamp(curr_unix_time).strftime('%Y-%m-%d %H:%M:%S')
     with open(efficiency_log_path(), 'a+') as f:
         out_line = '{0}\t{1}\t{2}\t{3}\n'.format(curr_unix_time, efficiency_result, curr_time, efficiency_coeff)
         f.write(out_line)

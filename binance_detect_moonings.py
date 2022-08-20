@@ -404,9 +404,15 @@ def core_sell(coin='', LastPrice=None, BuyPrice=None, PriceChange=None, coins_so
                     1 - (TRADING_FEE * 2))  # adjust for trading fee here
             write_log(
                 f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
-            curr_unix_time = time.mktime(datetime.now().timetuple())
+            curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+            curr_res = "+" if profit >= 0.0 else "-"
+            efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
+            # write to the efficiency_log file
             efficiency_log(curr_unix_time=curr_unix_time,
-                           efficiency_result="+" if profit >= 0.0 else "-")
+                           efficiency_result=curr_res,
+                           efficiency_coeff=efficiency_coef)
+
+
             session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
     return coins_sold
 
@@ -500,12 +506,16 @@ def sell_coins():
                     profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (1 - (TRADING_FEE * 2))  # adjust for trading fee here
                     write_log(
                         f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
-                    curr_unix_time = time.mktime(datetime.now().timetuple())
-                    efficiency_log(curr_unix_time=curr_unix_time,
-                                   efficiency_result="+" if profit >= 0.0 else "-")
 
-                    efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res="+" if profit >= 0.0 else "-")
+                    curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+                    curr_res = "+" if profit >= 0.0 else "-"
+                    efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
                     positive_set, positive_set_processed_time = calculate_last_positive_negative()
+                    # write to the efficiency_log file
+                    efficiency_log(curr_unix_time=curr_unix_time,
+                                   efficiency_result=curr_res,
+                                   efficiency_coeff=efficiency_coef)
+                    # write to the db
                     table_calculate_efficiency_write_data(conn=connect(),
                                                           efficiency_coef=efficiency_coef,
                                                           efficiency_coef_processed_time=str(efficiency_coef_processed_time),

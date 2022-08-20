@@ -72,7 +72,7 @@ def calculate_efficiency():
 
 def calculate_efficiency_lib(curr_res):
     positive_res, negative_res = calculate_positive_negative_checking_time()
-    curr_unix_time = time.mktime(datetime.now().timetuple())
+    curr_unix_time = int(time.mktime(datetime.now().timetuple()))
     if curr_res == "+":
         positive_res += 1
     elif curr_res == "-":

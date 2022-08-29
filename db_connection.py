@@ -177,7 +177,7 @@ def table_last_sold_pairs_data_read_data(conn=None):
         return unprocessed_data_list
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return [False, False, False]
+        return 'error in table_last_sold_pairs_data_read_data'
 
 
 def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
@@ -198,9 +198,7 @@ def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
             return []
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return []
-
-
+        return 'error in table_last_sold_pairs_data_read_data_by_pair_name'
 
 
 

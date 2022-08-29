@@ -62,7 +62,11 @@ from db_connection import (connect,
                            table_script_management_read_data,
                            table_script_management_write_data,
                            table_calculate_efficiency_read_data,
-                           table_calculate_efficiency_write_data)
+                           table_calculate_efficiency_write_data,
+                           table_last_sold_pairs_data_write_new_data,
+                           table_last_sold_pairs_data_read_data_by_pair_name)
+
+from check_pairs_activity import check_coin_pair_activity
 
 # for colourful logging to the console
 class txcolors:
@@ -297,6 +301,7 @@ def convert_volume():
     return volume, last_price
 
 
+
 def buy():
     '''Place Buy market orders for each volatile coin found'''
     volume, last_price = convert_volume()
@@ -311,18 +316,19 @@ def buy():
             curr_minus_delta_time = curr_unix_time - 20 * 60
             if TEST_MODE:
                 if STATUS == 'main':
-                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
-                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+                    if check_coin_pair_activity(pair_names=[coin]):
+                        efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
+                        if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                                 (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
-                        orders[coin] = [{
-                            'symbol': coin,
-                            'orderId': 0,
-                            'time': datetime.now().timestamp()
-                        }]
-                        # Log trade
-                        if LOG_TRADES:
-                            write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                            orders[coin] = [{
+                                'symbol': coin,
+                                'orderId': 0,
+                                'time': datetime.now().timestamp()
+                            }]
+                            # Log trade
+                            if LOG_TRADES:
+                                write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
                 elif STATUS == 'statistics':
                     orders[coin] = [{
                         'symbol': coin,
@@ -337,15 +343,16 @@ def buy():
             # try to create a real order if the test orders did not raise an exception
             try:
                 if STATUS == 'main':
-                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
-                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
-                        buy_limit = client.create_order(
-                            symbol=coin,
-                            side='BUY',
-                            type='MARKET',
-                            quantity=volume[coin]
-                        )
+                    if check_coin_pair_activity(pair_names=[coin]):
+                        efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect())
+                        if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                                 (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+                            buy_limit = client.create_order(
+                                symbol=coin,
+                                side='BUY',
+                                type='MARKET',
+                                quantity=volume[coin]
+                            )
 
             # error handling here in case position cannot be placed
             except Exception as e:
@@ -521,6 +528,12 @@ def sell_coins():
                                                           efficiency_coef_processed_time=str(efficiency_coef_processed_time),
                                                           positive_set=positive_set,
                                                           positive_set_processed_time=str(positive_set_processed_time))
+
+                    table_last_sold_pairs_data_write_new_data(conn=connect(),
+                                                              pair_name=coin,
+                                                              last_sold_time=str(efficiency_coef_processed_time))
+
+
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
             continue
 

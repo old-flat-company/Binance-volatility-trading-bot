@@ -604,6 +604,14 @@ def manage_in_running():
         return close_pairs, stop_main_script_manually
 
 
+def use_actual_balance_for_pair_with():
+    if STATUS == 'main' and USE_CURRENT_BALANCE_FOR_PAIR_WITH and not TEST_MODE:
+        return int(float(client.get_asset_balance(asset=PAIR_WITH)['free']))
+    else:
+        return QUANTITY
+
+
+
 if __name__ == '__main__':
 
     # Load arguments then parse settings
@@ -629,6 +637,7 @@ if __name__ == '__main__':
     TEST_MODE = parsed_config['script_options']['TEST_MODE']
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
     STATUS = parsed_config['script_options'].get('STATUS')
+    USE_CURRENT_BALANCE_FOR_PAIR_WITH = parsed_config['trading_options']['USE_CURRENT_BALANCE_FOR_PAIR_WITH']
 
     LOG_FILE = parsed_config['script_options'].get('LOG_FILE')
     EFFICIENCY_FILE = parsed_config['script_options'].get('EFFICIENCY_FILE')
@@ -638,7 +647,8 @@ if __name__ == '__main__':
 
     # Load trading vars
     PAIR_WITH = parsed_config['trading_options']['PAIR_WITH']
-    QUANTITY = parsed_config['trading_options']['QUANTITY']
+    # QUANTITY = parsed_config['trading_options']['QUANTITY']
+    QUANTITY = use_actual_balance_for_pair_with()
     MAX_COINS = parsed_config['trading_options']['MAX_COINS']
     FIATS = parsed_config['trading_options']['FIATS']
     TIME_DIFFERENCE = parsed_config['trading_options']['TIME_DIFFERENCE']

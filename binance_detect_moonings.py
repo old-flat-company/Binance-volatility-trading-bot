@@ -608,7 +608,7 @@ def use_actual_balance_for_pair_with():
     if STATUS == 'main' and USE_CURRENT_BALANCE_FOR_PAIR_WITH and not TEST_MODE:
         return int(float(client.get_asset_balance(asset=PAIR_WITH)['free']))
     else:
-        return QUANTITY
+        return parsed_config['trading_options']['QUANTITY']
 
 
 

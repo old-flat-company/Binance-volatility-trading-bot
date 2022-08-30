@@ -22,7 +22,7 @@ trading_options:
  
   # select your base currency to use for trading (trade for example USDT pairs)
   PAIR_WITH: USDT
-  USE_CURRENT_BALANCE_FOR_PAIR_WITH : False
+  USE_CURRENT_BALANCE_FOR_PAIR_WITH: False
 
   # Total amount per trade (your base currency balance must be at least MAX_COINS * QUANTITY)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.

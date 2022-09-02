@@ -523,15 +523,17 @@ def sell_coins():
                                    efficiency_result=curr_res,
                                    efficiency_coeff=efficiency_coef)
                     # write to the db
-                    table_calculate_efficiency_write_data(conn=connect(),
-                                                          efficiency_coef=efficiency_coef,
-                                                          efficiency_coef_processed_time=str(efficiency_coef_processed_time),
-                                                          positive_set=positive_set,
-                                                          positive_set_processed_time=str(positive_set_processed_time))
+                    if STATUS == 'statistics':
+                        table_calculate_efficiency_write_data(conn=connect(),
+                                                              efficiency_coef=efficiency_coef,
+                                                              efficiency_coef_processed_time=str(efficiency_coef_processed_time),
+                                                              positive_set=positive_set,
+                                                              positive_set_processed_time=str(positive_set_processed_time))
 
-                    table_last_sold_pairs_data_write_new_data(conn=connect(),
-                                                              pair_name=coin,
-                                                              last_sold_time=str(efficiency_coef_processed_time))
+                    if STATUS == 'main':
+                        table_last_sold_pairs_data_write_new_data(conn=connect(),
+                                                                  pair_name=coin,
+                                                                  last_sold_time=str(efficiency_coef_processed_time))
 
 
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))

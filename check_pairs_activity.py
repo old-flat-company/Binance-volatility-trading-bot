@@ -56,10 +56,14 @@ def del_coin_pair_with_old_activity(connect=None):
             print(e)
             return False
 
-
-if __name__ == '__main__':
-    connect = connect()
+def core_func():
     # check_coin_pair_activity(connect=connect, pair_names=['BNBUSDT'])
     while True:
         del_coin_pair_with_old_activity(connect=connect)
         time.sleep(3600)
+
+
+
+connect = connect()
+if __name__ == '__main__':
+    core_func()

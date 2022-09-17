@@ -2,13 +2,13 @@
 script_options:
   # Switch between testnet and mainnet
   # Setting this to False will use REAL funds, use at your own risk
-  TEST_MODE: True
+  TEST_MODE: False
   LOG_TRADES: True
   LOG_FILE: 'trades.txt'
   EFFICIENCY_FILE: 'efficiency_log.txt'
   #two variants
-#  STATUS: main
-  STATUS: statistics
+  STATUS: main
+#  STATUS: statistics
 
 
 
@@ -19,15 +19,14 @@ script_options:
 
 # These options apply to the trading methods the script executes
 trading_options:
- 
+
   # select your base currency to use for trading (trade for example USDT pairs)
   PAIR_WITH: USDT
   USE_CURRENT_BALANCE_FOR_PAIR_WITH: False
-
   # Total amount per trade (your base currency balance must be at least MAX_COINS * QUANTITY)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
   # Recommended: no less than 12 USDT. Suggested: 15 or more.
-  QUANTITY: 200
+  QUANTITY: 12
 
   # List of trading pairs to exclude
   # by default we're excluding the most popular fiat pairs
@@ -40,7 +39,7 @@ trading_options:
     - UP
 
   # Maximum number of trade 'slots' at any time (your USDT balance must be at least MAX_COINS * QUANTITY)
-  MAX_COINS: 3
+  MAX_COINS: 1
 
   # the amount of time in MINUTES to calculate the difference from the current price (minimum: 1).
   TIME_DIFFERENCE: 5
@@ -53,17 +52,19 @@ trading_options:
   CHANGE_IN_PRICE: 3
 
   # define in % when to sell a coin that's not making a profit.
-  STOP_LOSS: 2.5
+#  STOP_LOSS: 2.5
+#  STOP_LOSS: 2.0
+  STOP_LOSS: 0.8
 
   # define in % when to take profit on a profitable coin.
   TAKE_PROFIT: .8
 
   # Use custom tickers.txt list for filtering pairs.
   CUSTOM_LIST: True
-   
+
   # Name of custom tickers list
   TICKERS_LIST: 'tickers.txt'
-   
+
   # whether to use trailing stop loss or not; default is True
   USE_TRAILING_STOP_LOSS: True
 
@@ -71,17 +72,17 @@ trading_options:
   # when hit TAKE_PROFIT, move TAKE_PROFIT up by TRAILING_TAKE_PROFIT percentage points
   TRAILING_STOP_LOSS: .4
   TRAILING_TAKE_PROFIT: .1
-  
+
   # Trading fee in % per trade.
   # If using 0.75% (using BNB for fees) you must have BNB in your account to cover trading fees.
   # If using BNB for fees, it MUST be enabled in your Binance 'Dashboard' page (checkbox).
   TRADING_FEE: .075
-  
+
   SIGNALLING_MODULES:
 #    - pausebotmod
     - signalsamplemod
-    
-  
+
+
 # calculate_efficiency block
 calculate_efficiency_options:
 
@@ -96,9 +97,8 @@ manage_in_running_options:
 
 
 db_connect_options:
-  DB_HOST: 'localhost'
+  DB_HOST: 'ec2-13-230-1-13.ap-northeast-1.compute.amazonaws.com'
   DB_NAME: 'binance_mooning'
-  DB_USER: 'nikita'
-  DB_PASSWORD: '1000g0001'
-
+  DB_USER: 'postgres'
+  DB_PASSWORD: 'postgres'
 

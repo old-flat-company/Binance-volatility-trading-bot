@@ -342,7 +342,7 @@ def buy():
 
             # try to create a real order if the test orders did not raise an exception
             try:
-                if STATUS == 'main':
+                if STATUS == 'main' and not TEST_MODE:
                     if check_coin_pair_activity(connect=connect, pair_names=[coin]):
                         efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
                         if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \

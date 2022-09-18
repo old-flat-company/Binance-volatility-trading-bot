@@ -339,89 +339,97 @@ def buy():
                     if LOG_TRADES:
                         write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
                 continue
-
             # try to create a real order if the test orders did not raise an exception
-            try:
-                if STATUS == 'main' and not TEST_MODE:
-                    if check_coin_pair_activity(connect=connect, pair_names=[coin]):
-                        efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
-                        if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-                                 (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
-                            buy_limit = client.create_order(
-                                symbol=coin,
-                                side='BUY',
-                                type='MARKET',
-                                quantity=volume[coin]
-                            )
-
-            # error handling here in case position cannot be placed
-            except Exception as e:
-                print(e)
+            # try:
+            #     if STATUS == 'main' and not TEST_MODE:
+            #         if check_coin_pair_activity(connect=connect, pair_names=[coin]):
+            #             efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
+            #             if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+            #                      (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+            #                 buy_limit = client.create_order(
+            #                     symbol=coin,
+            #                     side='BUY',
+            #                     type='MARKET',
+            #                     quantity=volume[coin]
+            #                 )
+            #
+            # # error handling here in case position cannot be placed
+            # except Exception as e:
+            #     print(e)
 
             # run the else block if the position has been placed and return order info
-            else:
-                orders[coin] = client.get_all_orders(symbol=coin, limit=1)
 
-                # binance sometimes returns an empty list, the code will wait here until binance returns the order
-                while orders[coin] == []:
-                    print('Binance is being slow in returning the order, calling the API again...')
+            elif STATUS == 'main' and not TEST_MODE:
+                if check_coin_pair_activity(connect=connect, pair_names=[coin]):
+                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
+                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                            (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+                        buy_limit = client.create_order(symbol=coin,
+                                                        side='BUY',
+                                                        type='MARKET',
+                                                        quantity=volume[coin])
 
-                    orders[coin] = client.get_all_orders(symbol=coin, limit=1)
-                    time.sleep(1)
+                        orders[coin] = client.get_all_orders(symbol=coin, limit=1)
 
-                else:
-                    print('Order returned, saving order to file')
+                        # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                        while orders[coin] == []:
+                            print('Binance is being slow in returning the order, calling the API again...')
 
-                    # Log trade
-                    if LOG_TRADES:
-                        write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                            orders[coin] = client.get_all_orders(symbol=coin, limit=1)
+                            time.sleep(1)
 
+                        else:
+                            print('Order returned, saving order to file')
 
+                            # Log trade
+                            if LOG_TRADES:
+                                write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                continue
         else:
             print(f'Signal detected, but there is already an active trade on {coin}')
 
     return orders, last_price, volume
 
 
-def core_sell(coin='', LastPrice=None, BuyPrice=None, PriceChange=None, coins_sold=None):
-    # try to create a real order
-    global hsp_head, session_profit
-    try:
-        if not TEST_MODE:
-            sell_coins_limit = client.create_order(symbol=coin,
-                                                   side='SELL',
-                                                   type='MARKET',
-                                                   quantity=coins_bought[coin]['volume']
-                                                   )
-
-    # error handling here in case position cannot be placed
-    except Exception as e:
-        print(e)
-
-    # run the else block if coin has been sold and create a dict for each coin sold
-    else:
-        coins_sold[coin] = coins_bought[coin]
-
-        # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
-        volatility_cooloff[coin] = datetime.now()
-
-        # Log trade
-        if LOG_TRADES:
-            profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (
-                    1 - (TRADING_FEE * 2))  # adjust for trading fee here
-            write_log(
-                f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
-            curr_unix_time = int(time.mktime(datetime.now().timetuple()))
-            curr_res = "+" if profit >= 0.0 else "-"
-            efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
-            # write to the efficiency_log file
-            efficiency_log(curr_unix_time=curr_unix_time,
-                           efficiency_result=curr_res,
-                           efficiency_coeff=efficiency_coef)
-
-
-            session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
-    return coins_sold
+# def core_sell(coin='', LastPrice=None, BuyPrice=None, PriceChange=None, coins_sold=None):
+#     # try to create a real order
+#     global hsp_head, session_profit
+#     try:
+#         if not TEST_MODE:
+#             sell_coins_limit = client.create_order(symbol=coin,
+#                                                    side='SELL',
+#                                                    type='MARKET',
+#                                                    quantity=coins_bought[coin]['volume']
+#                                                    )
+#
+#     # error handling here in case position cannot be placed
+#     except Exception as e:
+#         print(e)
+#
+#     # run the else block if coin has been sold and create a dict for each coin sold
+#     else:
+#         coins_sold[coin] = coins_bought[coin]
+#
+#         # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
+#         volatility_cooloff[coin] = datetime.now()
+#
+#         # Log trade
+#         if LOG_TRADES:
+#             profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (
+#                     1 - (TRADING_FEE * 2))  # adjust for trading fee here
+#             write_log(
+#                 f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
+#             curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+#             curr_res = "+" if profit >= 0.0 else "-"
+#             efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
+#             # write to the efficiency_log file
+#             efficiency_log(curr_unix_time=curr_unix_time,
+#                            efficiency_result=curr_res,
+#                            efficiency_coeff=efficiency_coef)
+#
+#
+#             session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
+#     return coins_sold
 
 
 # def sell_coins(coins_close_manually=[]):
@@ -485,29 +493,41 @@ def sell_coins():
         if LastPrice < SL or LastPrice > TP and not USE_TRAILING_STOP_LOSS:
             print(f"{txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}")
 
-            # try to create a real order
-            try:
+            if not TEST_MODE:
+                if STATUS == 'main':
+                    sell_coins_limit = client.create_order(symbol=coin,
+                                                           side='SELL',
+                                                           type='MARKET',
+                                                           quantity=coins_bought[coin]['volume'])
 
-                if not TEST_MODE:
-                    sell_coins_limit = client.create_order(
-                        symbol = coin,
-                        side = 'SELL',
-                        type = 'MARKET',
-                        quantity = coins_bought[coin]['volume']
+                    coins_sold[coin] = coins_bought[coin]
+                    # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
+                    volatility_cooloff[coin] = datetime.now()
+                    # Log trade
+                    if LOG_TRADES:
+                        profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (
+                                    1 - (TRADING_FEE * 2))  # adjust for trading fee here
+                        write_log(
+                            f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
 
-                    )
+                        curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+                        curr_res = "+" if profit >= 0.0 else "-"
+                        efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
+                        # write to the efficiency_log file
+                        efficiency_log(curr_unix_time=curr_unix_time,
+                                       efficiency_result=curr_res,
+                                       efficiency_coeff=efficiency_coef)
+                        # write to the db
+                        table_last_sold_pairs_data_write_new_data(conn=connect,
+                                                                  pair_name=coin,
+                                                                  last_sold_time=str(efficiency_coef_processed_time))
+                        session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
+                    continue
 
-            # error handling here in case position cannot be placed
-            except Exception as e:
-                print(e)
-
-            # run the else block if coin has been sold and create a dict for each coin sold
-            else:
+            else: #if TEST_MODE==True
                 coins_sold[coin] = coins_bought[coin]
-
                 # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
                 volatility_cooloff[coin] = datetime.now()
-
                 # Log trade
                 if LOG_TRADES:
                     profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (1 - (TRADING_FEE * 2))  # adjust for trading fee here
@@ -535,15 +555,9 @@ def sell_coins():
                                                                   pair_name=coin,
                                                                   last_sold_time=str(efficiency_coef_processed_time))
 
-
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
-            continue
+                continue
 
-        # else:
-        #     coins_sold = core_sell(coin='', LastPrice=LastPrice, BuyPrice=BuyPrice,
-        #                            PriceChange=PriceChange, coins_sold=coins_sold)
-        #
-        #     continue
 
         # no action; print once every TIME_DIFFERENCE
         if hsp_head == 1:

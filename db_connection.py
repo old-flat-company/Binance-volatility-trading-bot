@@ -14,7 +14,9 @@ DB_HOST = parsed_config['db_connect_options']['DB_HOST']
 DB_NAME = parsed_config['db_connect_options']['DB_NAME']
 DB_USER = parsed_config['db_connect_options']['DB_USER']
 DB_PASSWORD = parsed_config['db_connect_options']['DB_PASSWORD']
-
+CROSS_MARGIN = parsed_config['script_options'].get('CROSS_MARGIN')
+account_type = 'spot' if not CROSS_MARGIN else 'margin'
+last_sold_pairs_table_name = 'last_sold_pairs_data' if account_type == 'spot' else 'margin_last_sold_pairs_data'
 
 def connect():
     """ Connect to the PostgreSQL database server """
@@ -170,14 +172,14 @@ def table_last_sold_pairs_data_read_data(conn=None):
     '''
     try:
         custom_cr = conn.cursor()
-        custom_query = 'SELECT id, pair_name, last_sold_time FROM public.last_sold_pairs_data;'
+        custom_query = 'SELECT id, pair_name, last_sold_time FROM public.%s;' % last_sold_pairs_table_name
         custom_cr.execute(custom_query)
         unprocessed_data_list = custom_cr.fetchall()
         custom_cr.close()
         return unprocessed_data_list
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return 'error in table_last_sold_pairs_data_read_data'
+        return 'error in the table for store last_sold_pairs_data'
 
 
 def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
@@ -189,7 +191,8 @@ def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
         custom_cr = conn.cursor()
         if pair_names:
             query_pair_names = ', '.join(["'" + pair_name + "'" for pair_name in pair_names])
-            custom_query = 'SELECT id, pair_name, last_sold_time FROM public.last_sold_pairs_data  WHERE  pair_name IN (%s);' % query_pair_names
+            custom_query = 'SELECT id, pair_name, last_sold_time FROM public.%s  WHERE  pair_name IN (%s);' % (last_sold_pairs_table_name,
+                                                                                                               query_pair_names)
             custom_cr.execute(custom_query)
             unprocessed_data_list = custom_cr.fetchall()
             custom_cr.close()
@@ -198,14 +201,13 @@ def table_last_sold_pairs_data_read_data_by_pair_name(conn=None, pair_names=[]):
             return []
     except (Exception, psycopg2.DatabaseError) as error:
         print(error)
-        return 'error in table_last_sold_pairs_data_read_data_by_pair_name'
+        return 'error in the table for store last_sold_pairs_data_by_pair_name'
 
 
 
 def table_last_sold_pairs_data_write_new_data(conn=None,
                                               pair_name=None,
-                                              last_sold_time=None
-                                              ):
+                                              last_sold_time=None):
     '''
     :param conn:  DB connection object
     :return:
@@ -214,7 +216,8 @@ def table_last_sold_pairs_data_write_new_data(conn=None,
     custom_cr = conn.cursor()
     try:
         if pair_name is not None and last_sold_time is not None:
-            custom_query = "INSERT INTO public.last_sold_pairs_data (pair_name, last_sold_time) VALUES ('%s', '%s');" % (
+            custom_query = "INSERT INTO public.%s (pair_name, last_sold_time) VALUES ('%s', '%s');" % (
+                last_sold_pairs_table_name,
                 pair_name,
                 last_sold_time)
             custom_cr.execute(custom_query)
@@ -235,7 +238,8 @@ def table_last_sold_pairs_data_del_old_data(conn=None, ids=[]):
     try:
         if ids:
             query_ids_list = str(tuple(ids)) if len(ids) > 1 else str(tuple(ids))[:-2] + ')'
-            custom_query = "DELETE FROM public.last_sold_pairs_data WHERE id IN " + query_ids_list + ";"
+            # custom_query = "DELETE FROM public.last_sold_pairs_data WHERE id IN " + query_ids_list + ";"
+            custom_query = "DELETE FROM public.%s WHERE id IN " % (last_sold_pairs_table_name) + query_ids_list + ";"
             custom_cr.execute(custom_query)
             conn.commit()
             custom_cr.close()

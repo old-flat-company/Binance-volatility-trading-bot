@@ -14,7 +14,7 @@ def check_coin_pair_activity(connect=None, pair_names=None):
     data_list = table_last_sold_pairs_data_read_data_by_pair_name(conn=connect,
                                                                   pair_names=pair_names)  # list of lists [[id, pair_name, last_sold_time]]
     if data_list:
-        if data_list == 'error in table_last_sold_pairs_data_read_data_by_pair_name':
+        if data_list == 'error in the table for store last_sold_pairs_data_by_pair_name':
             return False
         try:
             data_list = [[curr_id, pair_name, int(last_sold_time)] for curr_id, pair_name, last_sold_time in data_list]
@@ -40,7 +40,7 @@ def check_coin_pair_activity(connect=None, pair_names=None):
 def del_coin_pair_with_old_activity(connect=None):
     data_list = table_last_sold_pairs_data_read_data(conn=connect)
     if data_list:
-        if data_list == 'error in table_last_sold_pairs_data_read_data':
+        if data_list == 'error in the table for store last_sold_pairs_data':
             return False
         try:
             data_list = [[curr_id, pair_name, int(last_sold_time)] for curr_id, pair_name, last_sold_time in data_list]

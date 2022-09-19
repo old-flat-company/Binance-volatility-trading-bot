@@ -10,7 +10,7 @@ script_options:
   STATUS: main
 #  STATUS: statistics
 
-
+  CROSS_MARGIN: False
 
   # Set this to true if you are accessing binance from within the United States of America
   # Need to change TLD

@@ -364,26 +364,56 @@ def buy():
                     efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
                     if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
-                        buy_limit = client.create_order(symbol=coin,
-                                                        side='BUY',
-                                                        type='MARKET',
-                                                        quantity=volume[coin])
 
-                        orders[coin] = client.get_all_orders(symbol=coin, limit=1)
-
-                        # binance sometimes returns an empty list, the code will wait here until binance returns the order
-                        while orders[coin] == []:
-                            print('Binance is being slow in returning the order, calling the API again...')
+                        if not CROSS_MARGIN: # use spot account
+                            buy_limit = client.create_order(symbol=coin,
+                                                            side='BUY',
+                                                            type='MARKET',
+                                                            quantity=volume[coin])
 
                             orders[coin] = client.get_all_orders(symbol=coin, limit=1)
-                            time.sleep(1)
 
-                        else:
-                            print('Order returned, saving order to file')
+                            # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                            while orders[coin] == []:
+                                print('Binance is being slow in returning the order, calling the API again...')
 
-                            # Log trade
-                            if LOG_TRADES:
-                                write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+                                orders[coin] = client.get_all_orders(symbol=coin, limit=1)
+                                time.sleep(1)
+
+                            else:
+                                print('Order returned, saving order to file')
+
+                                # Log trade
+                                if LOG_TRADES:
+                                    write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+
+                        elif CROSS_MARGIN:  # use margin account
+                            # more info  https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
+                            # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
+                            volume[coin] = volume[coin] * 3
+                            buy_margin_order = client.create_margin_order(symbol=coin,
+                                                                          side=client.SIDE_BUY,
+                                                                          type=client.ORDER_TYPE_MARKET,
+                                                                          timeInForce=client.TIME_IN_FORCE_GTC,
+                                                                          sideEffectType="MARGIN_BUY",
+                                                                          quantity=volume[coin])
+
+                            orders[coin] = client.get_all_margin_orders(symbol=coin, limit=1)
+
+                            # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                            while orders[coin] == []:
+                                print('Binance is being slow in returning the order, calling the API again...')
+
+                                orders[coin] = client.get_all_margin_orders(symbol=coin, limit=1)
+                                time.sleep(1)
+
+                            else:
+                                print('Margin order returned, saving order to file')
+
+                                # Log trade
+                                if LOG_TRADES:
+                                    write_log(f"Buy (margin account): {volume[coin]} {coin} - {last_price[coin]['price']}")
+
                 continue
         else:
             print(f'Signal detected, but there is already an active trade on {coin}')
@@ -493,12 +523,21 @@ def sell_coins():
         if LastPrice < SL or LastPrice > TP and not USE_TRAILING_STOP_LOSS:
             print(f"{txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}")
 
+            account_type = 'margin' if CROSS_MARGIN else 'spot'
             if not TEST_MODE:
                 if STATUS == 'main':
-                    sell_coins_limit = client.create_order(symbol=coin,
-                                                           side='SELL',
-                                                           type='MARKET',
-                                                           quantity=coins_bought[coin]['volume'])
+                    if not CROSS_MARGIN:  # use spot account
+                        sell_coins_limit = client.create_order(symbol=coin,
+                                                               side='SELL',
+                                                               type='MARKET',
+                                                               quantity=coins_bought[coin]['volume'])
+
+                    elif CROSS_MARGIN:
+                        sell_margin_order = client.create_margin_order(symbol=coin,
+                                                                       side=client.SIDE_SELL,
+                                                                       type=client.ORDER_TYPE_MARKET,
+                                                                       sideEffectType="AUTO_REPAY",
+                                                                       quantity=coins_bought[coin]['volume'])
 
                     coins_sold[coin] = coins_bought[coin]
                     # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
@@ -506,7 +545,7 @@ def sell_coins():
                     # Log trade
                     if LOG_TRADES:
                         profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (
-                                    1 - (TRADING_FEE * 2))  # adjust for trading fee here
+                                1 - (TRADING_FEE * 2))  # adjust for trading fee here
                         write_log(
                             f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
 
@@ -523,6 +562,7 @@ def sell_coins():
                                                                   last_sold_time=str(efficiency_coef_processed_time))
                         session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
                     continue
+
 
             else: #if TEST_MODE==True
                 coins_sold[coin] = coins_bought[coin]
@@ -653,6 +693,7 @@ if __name__ == '__main__':
     TEST_MODE = parsed_config['script_options']['TEST_MODE']
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
     STATUS = parsed_config['script_options'].get('STATUS')
+    CROSS_MARGIN = parsed_config['script_options'].get('CROSS_MARGIN')
     USE_CURRENT_BALANCE_FOR_PAIR_WITH = parsed_config['trading_options']['USE_CURRENT_BALANCE_FOR_PAIR_WITH']
 
     LOG_FILE = parsed_config['script_options'].get('LOG_FILE')

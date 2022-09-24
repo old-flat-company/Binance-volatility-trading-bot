@@ -663,8 +663,6 @@ if __name__ == '__main__':
 
     # Load trading vars
     PAIR_WITH = parsed_config['trading_options']['PAIR_WITH']
-    # QUANTITY = parsed_config['trading_options']['QUANTITY']
-    QUANTITY = use_actual_balance_for_pair_with()
     MAX_COINS = parsed_config['trading_options']['MAX_COINS']
     FIATS = parsed_config['trading_options']['FIATS']
     TIME_DIFFERENCE = parsed_config['trading_options']['TIME_DIFFERENCE']
@@ -695,7 +693,10 @@ if __name__ == '__main__':
         client = Client(access_key, secret_key, tld='us')
     else:
         client = Client(access_key, secret_key)
-        
+    # QUANTITY = parsed_config['trading_options']['QUANTITY']
+    QUANTITY = use_actual_balance_for_pair_with()
+
+
     # If the users has a bad / incorrect API key.
     # this will stop the script from starting, and display a helpful error.
     api_ready, msg = test_api_key(client, BinanceAPIException)

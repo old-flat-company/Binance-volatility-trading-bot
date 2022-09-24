@@ -22,11 +22,11 @@ trading_options:
 
   # select your base currency to use for trading (trade for example USDT pairs)
   PAIR_WITH: USDT
-  USE_CURRENT_BALANCE_FOR_PAIR_WITH: False
+  USE_CURRENT_BALANCE_FOR_PAIR_WITH: True
   # Total amount per trade (your base currency balance must be at least MAX_COINS * QUANTITY)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
   # Recommended: no less than 12 USDT. Suggested: 15 or more.
-  QUANTITY: 12
+  QUANTITY: 210
 
   # List of trading pairs to exclude
   # by default we're excluding the most popular fiat pairs
@@ -53,8 +53,8 @@ trading_options:
 
   # define in % when to sell a coin that's not making a profit.
 #  STOP_LOSS: 2.5
-#  STOP_LOSS: 2.0
-  STOP_LOSS: 0.8
+  STOP_LOSS: 2.0
+#  STOP_LOSS: 0.8
 
   # define in % when to take profit on a profitable coin.
   TAKE_PROFIT: .8
@@ -97,7 +97,8 @@ manage_in_running_options:
 
 
 db_connect_options:
-  DB_HOST: 'ec2-13-230-1-13.ap-northeast-1.compute.amazonaws.com'
+  DB_HOST: 'localhost'
+#  DB_HOST: 'ec2-13-230-1-13.ap-northeast-1.compute.amazonaws.com'
   DB_NAME: 'binance_mooning'
   DB_USER: 'postgres'
   DB_PASSWORD: 'postgres'

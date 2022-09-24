@@ -390,7 +390,7 @@ def buy():
                         elif CROSS_MARGIN:  # use margin account
                             # more info  https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
                             # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
-                            volume[coin] = volume[coin] * 3
+                            volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
                             buy_margin_order = client.create_margin_order(symbol=coin,
                                                                           side=client.SIDE_BUY,
                                                                           type=client.ORDER_TYPE_MARKET,
@@ -523,7 +523,6 @@ def sell_coins():
         if LastPrice < SL or LastPrice > TP and not USE_TRAILING_STOP_LOSS:
             print(f"{txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}TP or SL reached, selling {coins_bought[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} : {PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}")
 
-            account_type = 'margin' if CROSS_MARGIN else 'spot'
             if not TEST_MODE:
                 if STATUS == 'main':
                     if not CROSS_MARGIN:  # use spot account
@@ -694,6 +693,8 @@ if __name__ == '__main__':
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
     STATUS = parsed_config['script_options'].get('STATUS')
     CROSS_MARGIN = parsed_config['script_options'].get('CROSS_MARGIN')
+    MARGIN_LEVERAGE_COEFFICIENT = parsed_config['script_options'].get('MARGIN_LEVERAGE_COEFFICIENT')
+
     USE_CURRENT_BALANCE_FOR_PAIR_WITH = parsed_config['trading_options']['USE_CURRENT_BALANCE_FOR_PAIR_WITH']
 
     LOG_FILE = parsed_config['script_options'].get('LOG_FILE')

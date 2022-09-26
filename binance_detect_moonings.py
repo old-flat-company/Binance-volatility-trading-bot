@@ -387,32 +387,46 @@ def buy():
                                 if LOG_TRADES:
                                     write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
 
-                        elif MARGIN:  # use margin account
-                            # more info  https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
+
+                            # more info  for isolated margin account
+                            # https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
                             # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
-                            volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
-                            buy_margin_order = client.create_margin_order(symbol=coin,
-                                                                          side=client.SIDE_BUY,
-                                                                          type=client.ORDER_TYPE_MARKET,
-                                                                          timeInForce=client.TIME_IN_FORCE_GTC,
-                                                                          sideEffectType="MARGIN_BUY",
-                                                                          quantity=volume[coin])
 
-                            orders[coin] = client.get_all_margin_orders(symbol=coin, limit=1)
+                        elif MARGIN:  # use isolated margin account
+                            try:
+                                volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
+                                transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                                                                                      symbol=coin,
+                                                                                      amount=str(QUANTITY))
 
-                            # binance sometimes returns an empty list, the code will wait here until binance returns the order
-                            while orders[coin] == []:
-                                print('Binance is being slow in returning the order, calling the API again...')
+                                if transaction.get('tranId'): #transaction from spot to isolated_margin was successful
+                                    buy_margin_order = client.create_margin_order(symbol=coin,
+                                                                                  side=client.SIDE_BUY,
+                                                                                  type=client.ORDER_TYPE_MARKET,
+                                                                                  timeInForce=client.TIME_IN_FORCE_GTC,
+                                                                                  sideEffectType="MARGIN_BUY",
+                                                                                  isIsolated='TRUE',
+                                                                                  quantity=volume[coin])
 
-                                orders[coin] = client.get_all_margin_orders(symbol=coin, limit=1)
-                                time.sleep(1)
-
-                            else:
-                                print('Margin order returned, saving order to file')
-
-                                # Log trade
-                                if LOG_TRADES:
-                                    write_log(f"Buy (margin account): {volume[coin]} {coin} - {last_price[coin]['price']}")
+                                    orders[coin] = client.get_all_margin_orders(symbol=coin,
+                                                                                isIsolated='TRUE',
+                                                                                limit=1)
+                                    # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                                    while orders[coin] == []:
+                                        print('Binance is being slow in returning the order, calling the API again...')
+                                        orders[coin] = client.get_all_margin_orders(symbol=coin,
+                                                                                    isIsolated='TRUE',
+                                                                                    limit=1)
+                                        time.sleep(1)
+                                    else:
+                                        print('Margin order returned, saving order to file')
+                                        # Log trade
+                                        if LOG_TRADES:
+                                            write_log(f"Buy (margin account): {volume[coin]} {coin} - {last_price[coin]['price']}")
+                            except Exception as e:
+                                print('error buy in isolated margin account')
+                                print(e)
+                                continue
 
                 continue
         else:
@@ -536,7 +550,15 @@ def sell_coins():
                                                                        side=client.SIDE_SELL,
                                                                        type=client.ORDER_TYPE_MARKET,
                                                                        sideEffectType="AUTO_REPAY",
+                                                                       isIsolated='TRUE',
                                                                        quantity=coins_bought[coin]['volume'])
+                        #from isolated to spot
+                        account_data = client.get_isolated_margin_account(symbols=coin)
+                        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                        client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                                symbol=coin,
+                                                                amount=free_quote_money)
+
 
                     coins_sold[coin] = coins_bought[coin]
                     # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
@@ -615,7 +637,7 @@ def update_portfolio(orders, last_price, volume):
 
         coins_bought[coin] = {
             'symbol': orders[coin][0]['symbol'],
-            'orderid': orders[coin][0]['orderId'],
+            'orderid': orders[coin][0]['orderId'] if not MARGIN else orders[coin][0]['id'],
             'timestamp': orders[coin][0]['time'],
             'bought_at': last_price[coin]['price'],
             'volume': volume[coin],

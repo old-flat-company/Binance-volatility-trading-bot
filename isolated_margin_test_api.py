@@ -47,6 +47,8 @@ def transfer_spot_to_isolated_margin():
         print("before_time = {}".format(before_unix_time))
         print("after_time = {}".format(after_unix_time))
         print("processing_time = {}".format(processing_time))
+        print('transaction tranId')
+        print(transaction.get('tranId'))
 
     except Exception as e:
         print(e)
@@ -75,7 +77,7 @@ if __name__ == '__main__':
     pass
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
-    # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
+    transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
      # transfer_isolated_margin_to_spot()  # it is work
 
     # print(client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH))) # it is work
@@ -111,4 +113,5 @@ if __name__ == '__main__':
     #                        'tradeEnabled': True,transfer_isolated_margin_to_spot()
     #                        'enabled': True}]}
     # print(get_isolated_margin_account_quote_asset_free_money()) # it is work
+    transfer_isolated_margin_to_spot()
 

@@ -74,3 +74,4 @@ YFI
 ZEC
 ZEN
 ZRX
+BNB

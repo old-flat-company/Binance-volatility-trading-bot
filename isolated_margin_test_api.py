@@ -52,6 +52,11 @@ def transfer_spot_to_isolated_margin():
         print(e)
 
 
+def get_isolated_margin_account_quote_asset_free_money():
+    account_data=client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH))
+    return account_data['assets'][0]['quoteAsset']['free']
+
+
 def transfer_isolated_margin_to_spot():
     '''
     https://python-binance.readthedocs.io/en/latest/margin.html#id18
@@ -59,7 +64,9 @@ def transfer_isolated_margin_to_spot():
     try:
         transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
                                                               symbol='{}{}'.format('LUNA', PAIR_WITH),
-                                                              amount='1.5')
+                                                              # amount='1.5'
+                                                              amount=get_isolated_margin_account_quote_asset_free_money() # it is work
+                                                              )
     except Exception as e:
         print(e)
 
@@ -68,5 +75,40 @@ if __name__ == '__main__':
     pass
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
-    #transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
+    # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
      # transfer_isolated_margin_to_spot()  # it is work
+
+    # print(client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH))) # it is work
+    # new_res = {'assets': [{'baseAsset': {'asset': 'LUNA',
+    #                                      'borrowEnabled': True,
+    #                                      'borrowed'client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH)): '0',
+    #                                      'free': '0',
+    #                                      'interest': '0',
+    #                                      'locked': '0',
+    #                                      'netAsset': '0',
+    #                                      'netAssetOfBtc': '0',
+    #                                      'repayEnabled': True,
+    #                                      'totalAsset': '0'},
+    #
+    #                        'quoteAsset': {'asset': 'USDT',
+    #                                       'borrowEnabled': True,
+    #                                       'borrowed': '0',
+    #                                       'free': '0.5',   #  important data
+    #                                       'interest': '0',
+    #                                       'locked': '0',
+    #                                       'netAsset': '0.5',
+    #                                       'netAssetOfBtc': '0.0000265',
+    #                                       'repayEnabled': True,
+    #                                       'totalAsset': '0.5'},
+    #                        'symbol': 'LUNAUSDT',
+    #                        'isolatedCreated': True,
+    #                        'marginLevel': '999',
+    #                        'marginLevelStatus': 'EXCESSIVE',
+    #                        'marginRatio': '5',
+    #                        'indexPrice': '2.21903125',
+    #                        'liquidatePrice': '0',
+    #                        'liquidateRate': '0',
+    #                        'tradeEnabled': True,transfer_isolated_margin_to_spot()
+    #                        'enabled': True}]}
+    # print(get_isolated_margin_account_quote_asset_free_money()) # it is work
+

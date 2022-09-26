@@ -14,8 +14,8 @@ DB_HOST = parsed_config['db_connect_options']['DB_HOST']
 DB_NAME = parsed_config['db_connect_options']['DB_NAME']
 DB_USER = parsed_config['db_connect_options']['DB_USER']
 DB_PASSWORD = parsed_config['db_connect_options']['DB_PASSWORD']
-CROSS_MARGIN = parsed_config['script_options'].get('CROSS_MARGIN')
-account_type = 'spot' if not CROSS_MARGIN else 'margin'
+MARGIN = parsed_config['script_options'].get('MARGIN')
+account_type = 'spot' if not MARGIN else 'margin'
 last_sold_pairs_table_name = 'last_sold_pairs_data' if account_type == 'spot' else 'margin_last_sold_pairs_data'
 
 def connect():

@@ -365,7 +365,7 @@ def buy():
                     if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
-                        if not CROSS_MARGIN: # use spot account
+                        if not MARGIN: # use spot account
                             buy_limit = client.create_order(symbol=coin,
                                                             side='BUY',
                                                             type='MARKET',
@@ -387,7 +387,7 @@ def buy():
                                 if LOG_TRADES:
                                     write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
 
-                        elif CROSS_MARGIN:  # use margin account
+                        elif MARGIN:  # use margin account
                             # more info  https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
                             # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
                             volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
@@ -525,13 +525,13 @@ def sell_coins():
 
             if not TEST_MODE:
                 if STATUS == 'main':
-                    if not CROSS_MARGIN:  # use spot account
+                    if not MARGIN:  # use spot account
                         sell_coins_limit = client.create_order(symbol=coin,
                                                                side='SELL',
                                                                type='MARKET',
                                                                quantity=coins_bought[coin]['volume'])
 
-                    elif CROSS_MARGIN:
+                    elif MARGIN:
                         sell_margin_order = client.create_margin_order(symbol=coin,
                                                                        side=client.SIDE_SELL,
                                                                        type=client.ORDER_TYPE_MARKET,
@@ -692,7 +692,7 @@ if __name__ == '__main__':
     TEST_MODE = parsed_config['script_options']['TEST_MODE']
     LOG_TRADES = parsed_config['script_options'].get('LOG_TRADES')
     STATUS = parsed_config['script_options'].get('STATUS')
-    CROSS_MARGIN = parsed_config['script_options'].get('CROSS_MARGIN')
+    MARGIN = parsed_config['script_options'].get('MARGIN')
     MARGIN_LEVERAGE_COEFFICIENT = parsed_config['script_options'].get('MARGIN_LEVERAGE_COEFFICIENT')
 
     USE_CURRENT_BALANCE_FOR_PAIR_WITH = parsed_config['trading_options']['USE_CURRENT_BALANCE_FOR_PAIR_WITH']

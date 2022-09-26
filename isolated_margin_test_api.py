@@ -73,11 +73,30 @@ def transfer_isolated_margin_to_spot():
         print(e)
 
 
+def check_isolated_margin_symbols():
+    active_isolated_margin_symbols = []
+    pair_not_found_in_isolated_margin_symbols = []
+    tickers = [line.strip() for line in open(TICKERS_LIST)]
+    # tickers = ['MIR', 'ARRR', 'BTCST']
+    for ticker in tickers:
+        try:
+            res = client.get_isolated_margin_symbol(symbol='{}{}'.format(ticker, PAIR_WITH))
+            if res:
+                active_isolated_margin_symbols.append(ticker)
+                print(ticker)
+        except Exception as e:
+            if 'Pair not found' in e.message:
+                pair_not_found_in_isolated_margin_symbols.append(ticker)
+                continue
+    # print(active_isolated_margin_symbols)
+    print(pair_not_found_in_isolated_margin_symbols)
+
+
 if __name__ == '__main__':
     pass
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
-    transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
+    # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
      # transfer_isolated_margin_to_spot()  # it is work
 
     # print(client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH))) # it is work
@@ -112,6 +131,7 @@ if __name__ == '__main__':
     #                        'liquidateRate': '0',
     #                        'tradeEnabled': True,transfer_isolated_margin_to_spot()
     #                        'enabled': True}]}
-    # print(get_isolated_margin_account_quote_asset_free_money()) # it is work
-    transfer_isolated_margin_to_spot()
-
+    # print(get_isolated_margin_account_quote_asset_free_money()) # it is isolated_margin_symbolwork
+    # transfer_isolated_margin_to_spot()
+# print(client.get_isolated_margin_symbol(symbol='{}{}'.format('MIR', PAIR_WITH)))
+check_isolated_margin_symbols()

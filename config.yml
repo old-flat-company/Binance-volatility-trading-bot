@@ -61,11 +61,12 @@ trading_options:
   # define in % when to take profit on a profitable coin.
   TAKE_PROFIT: .8
 
-  # Use custom tickers.txt list for filtering pairs.
+  # Use custom tickers.txt (for spot) or isolated_margin_tickers.txt (for isolated_margin)  list for filtering pairs.
   CUSTOM_LIST: True
 
   # Name of custom tickers list
-  TICKERS_LIST: 'tickers.txt'
+#  TICKERS_LIST: 'tickers.txt'
+  TICKERS_LIST: 'isolated_margin_tickers.txt'
 
   # whether to use trailing stop loss or not; default is True
   USE_TRAILING_STOP_LOSS: True

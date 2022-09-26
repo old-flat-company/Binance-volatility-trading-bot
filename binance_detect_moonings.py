@@ -403,7 +403,7 @@ def buy():
                                     buy_margin_order = client.create_margin_order(symbol=coin,
                                                                                   side=client.SIDE_BUY,
                                                                                   type=client.ORDER_TYPE_MARKET,
-                                                                                  timeInForce=client.TIME_IN_FORCE_GTC,
+                                                                                 # timeInForce=client.TIME_IN_FORCE_GTC,
                                                                                   sideEffectType="MARGIN_BUY",
                                                                                   isIsolated='TRUE',
                                                                                   quantity=volume[coin])

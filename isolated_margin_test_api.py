@@ -4,6 +4,7 @@ from datetime import datetime
 from binance.client import Client
 from helpers.parameters import parse_args, load_config
 from helpers.handle_creds import load_correct_creds
+# from binance_detect_moonings import use_actual_balance_for_pair_with
 
 args = parse_args()
 DEFAULT_CONFIG_FILE = 'config.yml'
@@ -15,9 +16,21 @@ parsed_creds = load_config(creds_file)
 
 TICKERS_LIST = parsed_config['trading_options']['TICKERS_LIST']
 PAIR_WITH = parsed_config['trading_options']['PAIR_WITH']
+STATUS = parsed_config['script_options'].get('STATUS')
+USE_CURRENT_BALANCE_FOR_PAIR_WITH = parsed_config['trading_options']['USE_CURRENT_BALANCE_FOR_PAIR_WITH']
+TEST_MODE = parsed_config['script_options']['TEST_MODE']
+
 # Load creds for correct environment
 access_key, secret_key = load_correct_creds(parsed_creds)
 client = Client(access_key, secret_key)
+
+def use_actual_balance_for_pair_with():
+    if STATUS == 'main' and USE_CURRENT_BALANCE_FOR_PAIR_WITH and not TEST_MODE:
+        return int(float(client.get_asset_balance(asset=PAIR_WITH)['free']))
+    else:
+        return parsed_config['trading_options']['QUANTITY']
+
+QUANTITY = use_actual_balance_for_pair_with()
 
 
 # https://python-binance.readthedocs.io/en/latest/margin.html
@@ -92,8 +105,20 @@ def check_isolated_margin_symbols():
     print(pair_not_found_in_isolated_margin_symbols)
 
 
+def get_symbol_info_min_money():
+    tickers = [line.strip() for line in open(TICKERS_LIST)]
+    for ticker in tickers:
+        symbol = '{}{}'.format(ticker, PAIR_WITH)
+        last_price = float(client.get_ticker(symbol=symbol).get('lastPrice'))
+        price_usdt = float(client.get_ticker(symbol=symbol).get('lastPrice')) * QUANTITY
+        info = client.get_symbol_info(symbol)
+        print('symbol: {} minQty:{} last_price:{}'.format(symbol, info['filters'][2]['minQty'], last_price))
+        # print('{}{} in usdt'.format(symbol, info['filters'][2]['minQty']), price_usdt)
+
+
+
+
 if __name__ == '__main__':
-    pass
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
     # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
@@ -134,4 +159,5 @@ if __name__ == '__main__':
     # print(get_isolated_margin_account_quote_asset_free_money()) # it is isolated_margin_symbolwork
     # transfer_isolated_margin_to_spot()
 # print(client.get_isolated_margin_symbol(symbol='{}{}'.format('MIR', PAIR_WITH)))
-check_isolated_margin_symbols()
+# check_isolated_margin_symbols()
+    get_symbol_info_min_money()

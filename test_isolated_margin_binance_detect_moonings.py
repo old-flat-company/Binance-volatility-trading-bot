@@ -266,7 +266,9 @@ def pause_bot():
 
 
 def curr_symbol_convert_volume(symbol=''):
-    '''Converts the volume given in QUANTITY from USDT to the each coin's volume'''
+    '''Converts the volume given in QUANTITY from USDT to the each coin's volume
+        This variant uses MARGIN_LEVERAGE_COEFFICIENT
+    '''
 
     # volatile_coins, number_of_coins, last_price = wait_for_price()
     lot_size = {}
@@ -288,7 +290,7 @@ def curr_symbol_convert_volume(symbol=''):
 
         # calculate the volume in coin from QUANTITY in USDT (default)
         # volume[coin] = float(QUANTITY / float(last_price[coin]['price']))
-        volume[coin] = float(QUANTITY / float(last_price))
+        volume[coin] = float(QUANTITY / float(last_price))*MARGIN_LEVERAGE_COEFFICIENT
 
         # define the volume with the correct step size
         if coin not in lot_size:
@@ -304,13 +306,16 @@ def curr_symbol_convert_volume(symbol=''):
     return volume, last_price
 
 
+
+
+
 def buy():
     '''Place Buy market orders for each volatile coin found'''
     coin = 'LUNAUSDT'
     volume, last_price = curr_symbol_convert_volume(symbol=coin)
     orders = {}
     try:
-        volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
+        # volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
         transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
                                                               symbol=coin,
                                                               amount=str(QUANTITY))
@@ -379,7 +384,7 @@ def update_portfolio(orders, last_price, volume):
     for coin in orders:
         coins_bought[coin] = {
             'symbol': orders[coin][0]['symbol'],
-            'orderid': orders[coin][0]['orderId'] if not MARGIN else orders[coin][0]['id'],
+            'orderid': orders[coin][0]['orderId'],
             'timestamp': orders[coin][0]['time'],
             'bought_at': last_price[coin]['price'],
             'volume': volume[coin],

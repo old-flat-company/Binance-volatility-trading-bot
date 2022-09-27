@@ -28,7 +28,7 @@ trading_options:
   # Total amount per trade (your base currency balance must be at least MAX_COINS * QUANTITY)
   # Binance uses a minimum of 10 USDT per trade, add a bit extra to enable selling if the price drops.
   # Recommended: no less than 12 USDT. Suggested: 15 or more.
-  QUANTITY: 10
+  QUANTITY: 12
 
   # List of trading pairs to exclude
   # by default we're excluding the most popular fiat pairs

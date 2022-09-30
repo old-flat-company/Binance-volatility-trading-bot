@@ -265,6 +265,23 @@ def pause_bot():
     return
 
 
+def get_isolated_margin_account_base_asset_free_money(symbol=''):
+    account_data = client.get_isolated_margin_account(symbols=symbol)
+    return account_data['assets'][0]['baseAsset']['free']
+
+
+from decimal import Decimal, ROUND_DOWN
+def asset_with_correct_step_size(asset=None, symbol=''):
+    info = client.get_symbol_info(symbol)
+    step_size = info['filters'][2]['stepSize']
+    lot_size = step_size.index('1') - 1
+    if lot_size < 0:
+        lot_size = 0
+    number = Decimal(str(asset))
+    number = number.quantize(Decimal('1.{}'.format(''.join(['0' for i in range(lot_size)]))), rounding=ROUND_DOWN)
+    number = float(number)
+    return number
+
 def curr_symbol_convert_volume(symbol=''):
     '''Converts the volume given in QUANTITY from USDT to the each coin's volume
         This variant uses MARGIN_LEVERAGE_COEFFICIENT
@@ -312,7 +329,7 @@ def curr_symbol_convert_volume(symbol=''):
 def buy():
     '''Place Buy market orders for each volatile coin found'''
     coin = 'LUNAUSDT'
-    volume, last_price = curr_symbol_convert_volume(symbol=coin)
+    volume, last_price = curr_symbol_convert_volume(symbol=coin)   # last_price  from  convert_volume()
     orders = {}
     try:
         # volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
@@ -351,6 +368,8 @@ def buy():
     return orders, last_price, volume
 
 
+
+
 def sell_coins():
     '''sell coins that have reached the STOP LOSS or TAKE PROFIT threshold'''
     coins_bought_list = list(coins_bought)
@@ -366,13 +385,25 @@ def sell_coins():
                                                    type=client.ORDER_TYPE_MARKET,
                                                    sideEffectType="AUTO_REPAY",
                                                    isIsolated='TRUE',
-                                                   quantity=coins_bought[coin]['volume'])
+                                                   # quantity=coins_bought[coin]['volume']
+                                                   quantity=asset_with_correct_step_size(asset=get_isolated_margin_account_base_asset_free_money(symbol=coin),
+                                                                                         symbol=coin)
+                                                   )
+
+
     # from isolated to spot
     account_data = client.get_isolated_margin_account(symbols=coin)
     free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+    free_base_money = account_data['assets'][0]['baseAsset']['free']
+
     client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
                                             symbol=coin,
                                             amount=free_quote_money)
+
+    client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],# base coin name
+                                            symbol=coin,
+                                            amount=free_base_money)
+
 
 
     return coins_sold
@@ -386,7 +417,8 @@ def update_portfolio(orders, last_price, volume):
             'symbol': orders[coin][0]['symbol'],
             'orderid': orders[coin][0]['orderId'],
             'timestamp': orders[coin][0]['time'],
-            'bought_at': last_price[coin]['price'],
+            # 'bought_at': last_price[coin]['price'],
+            'bought_at': last_price,
             'volume': volume[coin],
             'stop_loss': -STOP_LOSS,
             'take_profit': TAKE_PROFIT,

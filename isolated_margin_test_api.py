@@ -67,10 +67,31 @@ def transfer_spot_to_isolated_margin():
         print(e)
 
 
-def get_isolated_margin_account_quote_asset_free_money():
-    account_data=client.get_isolated_margin_account(symbols='{}{}'.format('LUNA', PAIR_WITH))
-    return account_data['assets'][0]['quoteAsset']['free']
+def get_isolated_margin_account_quote_asset_free_money(symbol=''):
+    account_data=client.get_isolated_margin_account(symbols=symbol)
+    res=account_data['assets'][0]['quoteAsset']['free']
+    print(res)
+    return res
 
+def get_isolated_margin_account_base_asset_free_money(symbol=''):
+    account_data = client.get_isolated_margin_account(symbols=symbol)
+    res=account_data['assets'][0]['baseAsset']['free']
+    print(res)
+    return  res
+
+
+def asset_with_correct_step_size(asset=None, symbol=''):
+    info = client.get_symbol_info(symbol)
+    step_size = info['filters'][2]['stepSize']
+    lot_size = step_size.index('1') - 1
+    if lot_size < 0:
+        lot_size = 0
+    # return int(asset) if lot_size == 0 else float('{:.{}f}'.format(float(asset), lot_size))
+    from decimal import Decimal, ROUND_DOWN
+    number = Decimal(str(asset))
+    number = number.quantize(Decimal('1.{}'.format(''.join(['0' for i in range(lot_size)]))), rounding=ROUND_DOWN)
+    number = float(number)
+    return number
 
 def transfer_isolated_margin_to_spot():
     '''
@@ -119,6 +140,7 @@ def get_symbol_info_min_money():
 
 
 if __name__ == '__main__':
+    pass
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
     # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
@@ -160,4 +182,12 @@ if __name__ == '__main__':
     # transfer_isolated_margin_to_spot()
 # print(client.get_isolated_margin_symbol(symbol='{}{}'.format('MIR', PAIR_WITH)))
 # check_isolated_margin_symbols()
-    get_symbol_info_min_money()
+#     get_symbol_info_min_money()
+
+
+
+    # print(asset_with_correct_step_size(asset=get_isolated_margin_account_base_asset_free_money(symbol='LUNAUSDT'),
+    #                              symbol='LUNAUSDT') )
+    #
+    # print(asset_with_correct_step_size(asset=get_isolated_margin_account_quote_asset_free_money(symbol='LUNAUSDT'),
+    #                              symbol='LUNAUSDT'))

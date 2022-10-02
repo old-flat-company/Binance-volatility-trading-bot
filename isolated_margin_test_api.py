@@ -137,10 +137,13 @@ def get_symbol_info_min_money():
         # print('{}{} in usdt'.format(symbol, info['filters'][2]['minQty']), price_usdt)
 
 
+def disable_isolated_margin_account(symbol=''):
+    return client._request_margin_api('delete', 'margin/isolated/account', signed=True, data={'symbol': symbol})
+
 
 
 if __name__ == '__main__':
-    pass
+
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
     # transfer_spot_to_isolated_margin()  # it is work   processing_time  less than 1 sec
@@ -191,3 +194,4 @@ if __name__ == '__main__':
     #
     # print(asset_with_correct_step_size(asset=get_isolated_margin_account_quote_asset_free_money(symbol='LUNAUSDT'),
     #                              symbol='LUNAUSDT'))
+    disable_isolated_margin_account(symbol='LUNAUSDT')

@@ -100,9 +100,14 @@ manage_in_running_options:
 
 
 db_connect_options:
-#  DB_HOST: 'localhost'
-  DB_HOST: 'ec2-13-230-1-13.ap-northeast-1.compute.amazonaws.com'
+  DB_HOST: 'localhost'
+#  DB_HOST: 'ec2-13-230-1-13.ap-northeast-1.compute.amazonaws.com'
   DB_NAME: 'binance_mooning'
   DB_USER: 'postgres'
   DB_PASSWORD: 'postgres'
 
+#db_connect_options:
+#  DB_HOST: 'localhost'
+#  DB_NAME: 'binance_mooning'
+#  DB_USER: 'nikita'
+#  DB_PASSWORD: '1000g0001'

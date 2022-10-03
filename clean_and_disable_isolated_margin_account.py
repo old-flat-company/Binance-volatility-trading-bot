@@ -20,28 +20,47 @@ TIME_SLEEP = 20 * 60  # 20 min
 # Load creds for correct environment
 access_key, secret_key = load_correct_creds(parsed_creds)
 client = Client(access_key, secret_key)
-
+connect = connect()
 
 def disable_isolated_margin_account(symbol=''):
     return client._request_margin_api('delete', 'margin/isolated/account', signed=True, data={'symbol': symbol})
 
+def enable_isolated_margin_account(symbol=''):
+    try:
+        client._request_margin_api('post', 'margin/isolated/create', signed=True, data={'symbol': symbol})
+    except Exception as e:
+        pass
+
+
+def transfer_and_disable():
+    if free_quote_money != '0':
+        client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                symbol=symbol,
+                                                amount=free_quote_money)
+    if free_base_money != '0':
+        client.transfer_isolated_margin_to_spot(asset=symbol[:-len(PAIR_WITH)],  # base coin name
+                                                symbol=symbol,
+                                                amount=free_base_money)
+    disable_isolated_margin_account(symbol=symbol)
+
 
 if __name__ == '__main__':
+
     while True:
         for curr_id, symbol, last_sold_time in table_last_sold_pairs_data_read_data(conn=connect):
             # from isolated to spot
             account_data = client.get_isolated_margin_account(symbols=symbol)
             free_quote_money = account_data['assets'][0]['quoteAsset']['free']
             free_base_money = account_data['assets'][0]['baseAsset']['free']
-
-            client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
-                                                    symbol=symbol,
-                                                    amount=free_quote_money)
-
-            client.transfer_isolated_margin_to_spot(asset=symbol[:-len(PAIR_WITH)],  # base coin name
-                                                    symbol=symbol,
-                                                    amount=free_base_money)
-
-            disable_isolated_margin_account(symbol=symbol)
+            if free_quote_money == '0' and free_base_money == '0':
+                continue
+            try:
+                transfer_and_disable()
+            except Exception as e:
+                if e.message == 'This isolated margin pair is disabled. Please activate it.':
+                    enable_isolated_margin_account(symbol=symbol)
+                    transfer_and_disable()
 
         time.sleep(TIME_SLEEP)
+
+# create_isolated_margin_account(self, **params)

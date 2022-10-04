@@ -622,7 +622,7 @@ def manage_in_running():
 
 def use_actual_balance_for_pair_with():
     if STATUS == 'main' and USE_CURRENT_BALANCE_FOR_PAIR_WITH and not TEST_MODE:
-        return int(float(client.get_asset_balance(asset=PAIR_WITH)['free']))
+        return int(0.95 * float(client.get_asset_balance(asset=PAIR_WITH)['free']))# usage 95% from all money
     else:
         return parsed_config['trading_options']['QUANTITY']
 

@@ -286,6 +286,7 @@ def convert_volume():
         #spot
         asset = float(QUANTITY / float(last_price[coin]['price']))
         volume[coin] = asset_with_correct_step_size(asset=asset, symbol=coin)
+        isolated_margin_volume[coin] = ''
         if MARGIN:
             asset *= MARGIN_LEVERAGE_COEFFICIENT
             isolated_margin_volume[coin] = asset_with_correct_step_size(asset=asset, symbol=coin)
@@ -305,7 +306,7 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None):
                                         side='BUY',
                                         type='MARKET',
                                         quantity=volume[coin])
-
+        print('core_spot_buy -- spot buy was  successful')
         orders[coin] = client.get_all_orders(symbol=coin, limit=1)
 
         # binance sometimes returns an empty list, the code will wait here until binance returns the order
@@ -317,7 +318,6 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None):
 
         else:
             print('Order returned, saving order to file')
-
             # Log trade
             if LOG_TRADES:
                 write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
@@ -332,7 +332,7 @@ def core_isolated_margin_buy(coin=None,isolated_margin_volume=None):
         transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
                                                               symbol=coin,
                                                               amount=str(QUANTITY))
-
+        print('core_isolated_margin_buy -- transfer_spot_to_isolated_margin was successful')
         if transaction.get('tranId'):  # transaction from spot to isolated_margin was successful
             buy_margin_order = client.create_margin_order(symbol=coin,
                                                           side=client.SIDE_BUY,
@@ -341,7 +341,7 @@ def core_isolated_margin_buy(coin=None,isolated_margin_volume=None):
                                                           sideEffectType="MARGIN_BUY",
                                                           isIsolated='TRUE',
                                                           quantity=isolated_margin_volume[coin])
-
+            print('core_isolated_margin_buy -- isolated margin buy was successful pair: {}'.format(coin))
             orders[coin] = client.get_all_margin_orders(symbol=coin,
                                                         isIsolated='TRUE',
                                                         limit=1)
@@ -463,8 +463,27 @@ def buy():
                                                                                isolated_margin_volume=isolated_margin_volume)
                             if res_isolated_margin_buy:
                                 continue
-                            else:  # try to use spot account
-                                core_spot_buy(coin=coin, volume=volume, isolated_margin_volume=isolated_margin_volume)
+                            else: #if we have some error in isolated_margin_buy -- try to use spot account
+
+                                account_data = client.get_isolated_margin_account(symbols=coin)
+                                free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                                # free_base_money = account_data['assets'][0]['baseAsset']['free']
+                                if free_quote_money !='0': # if we have some money to the transaction
+                                    transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                                                          symbol=coin,
+                                                                                          amount=free_quote_money)
+                                    if transaction.get('tranId'):
+                                        core_spot_buy(coin=coin, volume=volume,
+                                                      isolated_margin_volume=isolated_margin_volume)
+
+                                else: # if  we have not any money  in the isolated  margin account  --all money in the spot account. Let's use it
+                                    core_spot_buy(coin=coin, volume=volume,
+                                                  isolated_margin_volume=isolated_margin_volume)
+
+                                # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
+                                #                                         symbol=coin,
+                                #                                         amount=free_base_money)
+
                                 continue
 
                             # try:
@@ -617,16 +636,20 @@ def sell_coins():
             if not TEST_MODE:
                 if STATUS == 'main':
                     # if not MARGIN:  # use spot account
-                    if not coins_bought[coin]['isolated_margin_volume']:  # use spot account
+                    coin_isolated_margin_volume = coins_bought[coin]['isolated_margin_volume']
+                    if not coin_isolated_margin_volume:  # use spot account
+                        print("sell_coins --- coin_isolated_margin_volume == {}".format(coin_isolated_margin_volume))
+                        print('sell_coins --- use spot account')
                         sell_coins_limit = client.create_order(symbol=coin,
                                                                side='SELL',
                                                                type='MARKET',
                                                                quantity=coins_bought[coin]['volume'])
 
-                    # elif MARGIN: # use  isolated margin account
-                    elif coins_bought[coin]['isolated_margin_volume']:
+                    # elif MARGIN: # use isolated margin account
+                    elif coin_isolated_margin_volume:
+                        print("sell_coins --- coin_isolated_margin_volume == {}".format(coin_isolated_margin_volume))
+                        print('sell_coins --- use isolated margin account')
                         account_data = client.get_isolated_margin_account(symbols=coin)
-                        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
                         free_base_money = account_data['assets'][0]['baseAsset']['free']
                         sell_margin_order = client.create_margin_order(symbol=coin,
                                                                        side=client.SIDE_SELL,
@@ -637,15 +660,17 @@ def sell_coins():
                                                                        quantity=asset_with_correct_step_size(asset=free_base_money,
                                                                                                              symbol=coin)
                                                                        )
-
                         # from isolated to spot
-                        client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
-                                                                symbol=coin,
-                                                                amount=free_quote_money)
+                        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                        if free_quote_money !='0':
+                            client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                                    symbol=coin,
+                                                                    amount=free_quote_money)
 
-                        client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
-                                                                symbol=coin,
-                                                                amount=free_base_money)
+                        if free_base_money !='0':
+                            client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
+                                                                    symbol=coin,
+                                                                    amount=free_base_money)
 
                     coins_sold[coin] = coins_bought[coin]
                     # prevent system from buying this coin for the next TIME_DIFFERENCE minutes

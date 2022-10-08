@@ -300,7 +300,7 @@ def convert_volume():
 #                                         symbol=symbol)
 
 
-def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None):
+def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None, orders=None):
     try:
         buy_limit = client.create_order(symbol=coin,
                                         side='BUY',
@@ -327,7 +327,8 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None):
         print(e)
         return False
 
-def core_isolated_margin_buy(coin=None,isolated_margin_volume=None):
+
+def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None):
     try:
         transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
                                                               symbol=coin,
@@ -430,7 +431,10 @@ def buy():
                             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
                         if not MARGIN:# use spot account
-                            core_spot_buy(coin=coin, volume=volume, isolated_margin_volume=isolated_margin_volume)
+                            core_spot_buy(coin=coin,
+                                          volume=volume,
+                                          isolated_margin_volume=isolated_margin_volume,
+                                          orders=orders)
                             continue
                             # buy_limit = client.create_order(symbol=coin,
                             #                                 side='BUY',
@@ -460,7 +464,8 @@ def buy():
                             # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
                         elif MARGIN:# use isolated margin account
                             res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
-                                                                               isolated_margin_volume=isolated_margin_volume)
+                                                                               isolated_margin_volume=isolated_margin_volume,
+                                                                               orders=orders)
                             if res_isolated_margin_buy:
                                 continue
                             else: #if we have some error in isolated_margin_buy -- try to use spot account
@@ -468,16 +473,20 @@ def buy():
                                 account_data = client.get_isolated_margin_account(symbols=coin)
                                 free_quote_money = account_data['assets'][0]['quoteAsset']['free']
                                 # free_base_money = account_data['assets'][0]['baseAsset']['free']
-                                if free_quote_money !='0': # if we have some money to the transaction
+                                if free_quote_money != '0':  # if we have some money to the transaction
                                     transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
                                                                                           symbol=coin,
                                                                                           amount=free_quote_money)
                                     if transaction.get('tranId'):
-                                        core_spot_buy(coin=coin, volume=volume,
+                                        core_spot_buy(coin=coin,
+                                                      volume=volume,
+                                                      orders=orders,
                                                       isolated_margin_volume=isolated_margin_volume)
 
                                 else: # if  we have not any money  in the isolated  margin account  --all money in the spot account. Let's use it
-                                    core_spot_buy(coin=coin, volume=volume,
+                                    core_spot_buy(coin=coin,
+                                                  volume=volume,
+                                                  orders=orders,
                                                   isolated_margin_volume=isolated_margin_volume)
 
                                 # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
@@ -745,8 +754,13 @@ def sell_coins():
 
 def update_portfolio(orders, last_price, volume, isolated_margin_volume):
     '''add every coin bought to our portfolio for tracking/selling later'''
-    if DEBUG: print(orders)
+    if DEBUG:
+        print(orders)
     for coin in orders:
+        #---- for testing --------
+        print('volume {}'.format(volume[coin]))
+        print('isolated_margin_volume {}'.format(isolated_margin_volume[coin]))
+        #---- --------------------
 
         coins_bought[coin] = {
             'symbol': orders[coin][0]['symbol'],

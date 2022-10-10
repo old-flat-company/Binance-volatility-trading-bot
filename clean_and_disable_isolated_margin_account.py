@@ -159,6 +159,7 @@ def disable_active_isolated_margin_accounts():
 
 if __name__ == '__main__':
     try:
+
         #https://binance-docs.github.io/apidocs/spot/en/#enable-isolated-margin-account-trade
         # Enable isolated margin account for a specific symbol(Only supports activation of previously disabled accounts).
         #we can send this command a few times without any error

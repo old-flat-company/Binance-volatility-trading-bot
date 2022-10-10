@@ -90,6 +90,29 @@ def disable_isolated_margin_account(symbol=''):
 #         pass
 
 
+def transfer_from_margin_to_spot(symbol=''):
+    try:
+        account_data = client.get_isolated_margin_account(symbols=symbol)
+        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+        free_base_money = account_data['assets'][0]['baseAsset']['free']
+        print('free_quote_money', free_quote_money)
+        print('free_base_money', free_base_money)
+        if free_quote_money == '0' and free_base_money == '0':
+            return True
+        if free_quote_money != '0':
+            client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                    symbol=symbol,
+                                                    amount=free_quote_money)
+        if free_base_money != '0':
+            client.transfer_isolated_margin_to_spot(asset=symbol[:-len(PAIR_WITH)],  # base coin name
+                                                    symbol=symbol,
+                                                    amount=free_base_money)
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
 # def transfer_and_disable():
 #     if free_quote_money != '0':
 #         client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
@@ -103,17 +126,35 @@ def disable_isolated_margin_account(symbol=''):
 
 
 
-def check_coin_for_disable(curr_coin=''):
-    active_isolated_margin_accounts = [ curr_isolated_margin_account.get('symbol') for curr_isolated_margin_account in client.get_isolated_margin_account().get('assets')]
-    isolated_margin_accounts_for_disable = active_isolated_margin_accounts
+def disable_active_isolated_margin_accounts():
+    active_isolated_margin_pairs = [ curr_isolated_margin_account.get('symbol') for curr_isolated_margin_account in client.get_isolated_margin_account().get('assets')]
     coins_bought_file_path = 'coins_bought.json'
     with open(coins_bought_file_path) as coins_bought_data:
         coins_bought_dict = json.load(coins_bought_data)
-        if coins_bought_dict:
-            coins_in_progress = [coin_data.get('symbol') for coin_name, coin_data in coins_bought_dict.items() if
-                                 coin_data.get('isolated_margin_volume')]
-            isolated_margin_accounts_for_disable = list(set(active_isolated_margin_accounts) - set(coins_in_progress))
-    return True if curr_coin in isolated_margin_accounts_for_disable else False
+        if not coins_bought_dict:
+            for symbol in active_isolated_margin_pairs:
+                transfer_res=transfer_from_margin_to_spot(symbol=symbol)
+                if not transfer_res:
+                    continue
+                else:
+                    try:
+                        disable_isolated_margin_account(symbol=symbol)
+                    except Exception as e:
+                        print(e)
+                        continue
+
+
+
+
+
+
+    #         coins_in_progress = [coin_data.get('symbol') for coin_name, coin_data in coins_bought_dict.items() if
+    #                              coin_data.get('isolated_margin_volume')]
+    #         isolated_margin_accounts_for_disable = list(set(active_isolated_margin_accounts) - set(coins_in_progress))
+    # return True if curr_coin in isolated_margin_accounts_for_disable else False
+
+
+
 
 
 if __name__ == '__main__':
@@ -127,10 +168,10 @@ if __name__ == '__main__':
         #APIError(code=-1003): Too many requests; current request has limited.
         # disable_isolated_margin_account(symbol='LUNAUSDT')
 
-        active_isolated_margin_accounts = client.get_isolated_margin_account().get('assets')
+        # active_isolated_margin_accounts = client.get_isolated_margin_account().get('assets')
         # for active_isolated_margin_accounts
 
-
+         # transfer_from_margin_to_spot(symbol='MDXUSDT') # works correctly
 
 
 

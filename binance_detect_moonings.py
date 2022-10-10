@@ -581,6 +581,27 @@ def buy():
 # def sell_coins(coins_close_manually=[]):
 
 
+def transfer_from_margin_to_spot(symbol=''):
+    try:
+        account_data = client.get_isolated_margin_account(symbols=symbol)
+        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+        free_base_money = account_data['assets'][0]['baseAsset']['free']
+        print('free_quote_money', free_quote_money)
+        print('free_base_money', free_base_money)
+        if free_quote_money == '0' and free_base_money == '0':
+            return True
+        if free_quote_money != '0':
+            client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                    symbol=symbol,
+                                                    amount=free_quote_money)
+        if free_base_money != '0':
+            client.transfer_isolated_margin_to_spot(asset=symbol[:-len(PAIR_WITH)],  # base coin name
+                                                    symbol=symbol,
+                                                    amount=free_base_money)
+        return True
+    except Exception as e:
+        print(e)
+        return False
 
 def sell_coins():
     '''sell coins that have reached the STOP LOSS or TAKE PROFIT threshold'''
@@ -618,6 +639,7 @@ def sell_coins():
     #                'volume': 7.7, 'stop_loss': -2.5, 'take_profit': 0.8}}
     # list(coins_bought) ==['BTCSTUSDT']
 
+    last_coin_pair_name = ''
     for coin in coins_bought_list:
         # define stop loss and take profit
         TP = float(coins_bought[coin]['bought_at']) + (float(coins_bought[coin]['bought_at']) * coins_bought[coin]['take_profit']) / 100
@@ -670,6 +692,7 @@ def sell_coins():
                                                                                                              symbol=coin)
                                                                        )
 
+                        last_coin_pair_name = coin
                         # # values of baseAsset and quoteAsset  was changed  - get it again
                         # account_data = client.get_isolated_margin_account(symbols=coin)
                         # free_base_money = account_data['assets'][0]['baseAsset']['free']
@@ -754,7 +777,7 @@ def sell_coins():
 
     if hsp_head == 1 and len(coins_bought_list) == 0: print(f'Not holding any coins')
  
-    return coins_sold
+    return last_coin_pair_name, coins_sold
 
 
 def update_portfolio(orders, last_price, volume, isolated_margin_volume):
@@ -979,7 +1002,8 @@ if __name__ == '__main__':
             orders, last_price, volume, isolated_margin_volume = buy()
             update_portfolio(orders, last_price, volume, isolated_margin_volume)
             # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
-            coins_sold = sell_coins()
+            last_coin_pair_name, coins_sold = sell_coins()
+            transfer_from_margin_to_spot(symbol=last_coin_pair_name)
             remove_from_portfolio(coins_sold)
         except ReadTimeout as rt:
             READ_TIMEOUT_COUNT += 1

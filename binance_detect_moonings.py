@@ -669,20 +669,22 @@ def sell_coins():
                                                                        quantity=asset_with_correct_step_size(asset=free_base_money,
                                                                                                              symbol=coin)
                                                                        )
-                        # values of baseAsset and quoteAsset  was changed  - get it again
-                        account_data = client.get_isolated_margin_account(symbols=coin)
-                        free_base_money = account_data['assets'][0]['baseAsset']['free']
-                        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
-                        # from isolated to spot
-                        if free_quote_money !='0':
-                            client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
-                                                                    symbol=coin,
-                                                                    amount=free_quote_money)
 
-                        if free_base_money !='0':
-                            client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
-                                                                    symbol=coin,
-                                                                    amount=free_base_money)
+                        # # values of baseAsset and quoteAsset  was changed  - get it again
+                        # account_data = client.get_isolated_margin_account(symbols=coin)
+                        # free_base_money = account_data['assets'][0]['baseAsset']['free']
+                        # free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                        # # from isolated to spot
+                        # if free_quote_money !='0':
+                        #     client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                        #                                             symbol=coin,
+                        #                                             amount=free_quote_money)
+                        #
+                        # if free_base_money !='0':
+                        #     client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
+                        #                                             symbol=coin,
+                        #                                             amount=free_base_money)
+
 
                     coins_sold[coin] = coins_bought[coin]
                     # prevent system from buying this coin for the next TIME_DIFFERENCE minutes

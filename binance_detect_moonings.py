@@ -328,13 +328,50 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None, orders=No
         return False
 
 
+def enable_isolated_margin_account(symbol=''):
+    # turn on an account that already was activated but now it in the disable stage.
+    try:
+        # we can send this command a few times without any error
+        client._request_margin_api('post', 'margin/isolated/account', True, data={'symbol': symbol})
+        client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                                                symbol=symbol,
+                                                amount=str(QUANTITY))
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def activate_isolated_margin_account(symbol=''):
+    try:
+        client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                                                symbol=symbol,
+                                                amount=str(QUANTITY))
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+
+def activate_or_enable_isolated_margin_account(symbol=''):
+    if activate_isolated_margin_account(symbol=symbol):
+        return True
+    else:
+        return enable_isolated_margin_account(symbol=symbol)
+
+
 def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None):
     try:
-        transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
-                                                              symbol=coin,
-                                                              amount=str(QUANTITY))
-        print('core_isolated_margin_buy -- transfer_spot_to_isolated_margin was successful')
-        if transaction.get('tranId'):  # transaction from spot to isolated_margin was successful
+
+        activate_or_enable = activate_or_enable_isolated_margin_account(symbol=coin)
+        # transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+        #                                                       symbol=coin,
+        #                                                       amount=str(QUANTITY))
+
+
+        print('core_isolated_margin_buy -- activate_or_enable_isolated_margin_account was successful')
+
+        if activate_or_enable:  # activate_or_enable_isolated_margin_account  and transaction from spot account was successful
             buy_margin_order = client.create_margin_order(symbol=coin,
                                                           side=client.SIDE_BUY,
                                                           type=client.ORDER_TYPE_MARKET,

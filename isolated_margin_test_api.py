@@ -142,7 +142,44 @@ def disable_isolated_margin_account(symbol=''):
 
 
 
+
+
+def enable_isolated_margin_account(symbol=''):
+    # turn on an account that already was activated but now it in the disable stage.
+    try:
+        # we can send this command a few times without any error
+        client._request_margin_api('post', 'margin/isolated/account', True, data={'symbol': symbol})
+        client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                                                symbol=symbol,
+                                                # amount=str(QUANTITY))
+                                                amount=str(0.5))
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+def activate_isolated_margin_account(symbol=''):
+    try:
+        client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                                                symbol=symbol,
+                                                # amount=str(QUANTITY))
+                                                amount=str(0.5))
+        return True
+    except Exception as e:
+        print(e)
+        return False
+
+def activate_or_enable_isolated_margin_account(symbol=''):
+    if activate_isolated_margin_account(symbol=symbol):
+        return True
+    else:
+        return enable_isolated_margin_account(symbol=symbol)
+
+
+
 if __name__ == '__main__':
+    activate_or_enable_isolated_margin_account(symbol='PUNDIXUSDT')
+    # pass
 
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()
@@ -194,4 +231,4 @@ if __name__ == '__main__':
     #
     # print(asset_with_correct_step_size(asset=get_isolated_margin_account_quote_asset_free_money(symbol='LUNAUSDT'),
     #                              symbol='LUNAUSDT'))
-    disable_isolated_margin_account(symbol='LUNAUSDT')
+    # disable_isolated_margin_account(symbol='LUNAUSDT')

@@ -586,8 +586,6 @@ def transfer_from_margin_to_spot(symbol=''):
         account_data = client.get_isolated_margin_account(symbols=symbol)
         free_quote_money = account_data['assets'][0]['quoteAsset']['free']
         free_base_money = account_data['assets'][0]['baseAsset']['free']
-        print('free_quote_money', free_quote_money)
-        print('free_base_money', free_base_money)
         if free_quote_money == '0' and free_base_money == '0':
             return True
         if free_quote_money != '0':
@@ -602,6 +600,7 @@ def transfer_from_margin_to_spot(symbol=''):
     except Exception as e:
         print(e)
         return False
+
 
 def sell_coins():
     '''sell coins that have reached the STOP LOSS or TAKE PROFIT threshold'''

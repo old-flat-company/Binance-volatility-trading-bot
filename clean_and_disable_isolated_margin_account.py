@@ -51,7 +51,7 @@ def disable_active_isolated_margin_accounts():
     active_isolated_margin_pairs = [curr_isolated_margin_account.get('symbol') for curr_isolated_margin_account in client.get_isolated_margin_account().get('assets')]
     coins_bought_file_path = 'coins_bought.json'
     for symbol in active_isolated_margin_pairs:
-        if not os.stat(coins_bought_file_path).st_size:
+        if os.stat(coins_bought_file_path).st_size <= 2:  # in the empty json file we have {}
             transfer_res=transfer_from_margin_to_spot(symbol=symbol)
             if not transfer_res:
                 continue

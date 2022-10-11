@@ -1039,7 +1039,8 @@ if __name__ == '__main__':
             update_portfolio(orders, last_price, volume, isolated_margin_volume)
             # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
             last_coin_pair_name, coins_sold = sell_coins()
-            transfer_from_margin_to_spot(symbol=last_coin_pair_name)
+            if last_coin_pair_name:
+                transfer_from_margin_to_spot(symbol=last_coin_pair_name)
             remove_from_portfolio(coins_sold)
         except ReadTimeout as rt:
             READ_TIMEOUT_COUNT += 1

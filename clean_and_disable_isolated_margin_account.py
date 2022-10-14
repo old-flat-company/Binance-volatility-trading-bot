@@ -66,8 +66,8 @@ def disable_active_isolated_margin_accounts():
 
 if __name__ == '__main__':
     while True:
-        print('sleep 5 min')
-        time.sleep(5 * 60)
+        print('sleep 1 min')
+        time.sleep(1 * 60)
         try:
             disable_active_isolated_margin_accounts()
             #https://binance-docs.github.io/apidocs/spot/en/#enable-isolated-margin-account-trade

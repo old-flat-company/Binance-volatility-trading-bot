@@ -305,7 +305,8 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None, orders=No
         buy_limit = client.create_order(symbol=coin,
                                         side='BUY',
                                         type='MARKET',
-                                        quantity=volume[coin])
+                                        # quantity=volume[coin])
+                                        quantity=asset_with_correct_step_size(asset=volume[coin], symbol=coin))
         print('core_spot_buy -- spot buy was  successful')
         orders[coin] = client.get_all_orders(symbol=coin, limit=1)
 
@@ -378,7 +379,10 @@ def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None
                                                           # timeInForce=client.TIME_IN_FORCE_GTC,
                                                           sideEffectType="MARGIN_BUY",
                                                           isIsolated='TRUE',
-                                                          quantity=isolated_margin_volume[coin])
+                                                          # quantity=isolated_margin_volume[coin])
+                                                          quantity=asset_with_correct_step_size(asset=isolated_margin_volume[coin], symbol=coin))
+
+
             print('core_isolated_margin_buy -- isolated margin buy was successful pair: {}'.format(coin))
             orders[coin] = client.get_all_margin_orders(symbol=coin,
                                                         isIsolated='TRUE',

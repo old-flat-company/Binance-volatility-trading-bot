@@ -816,7 +816,7 @@ def sell_coins():
 
         #---------------start the block "checking time after buy" -------------
         if coins_bought[coin]['buy_unix_time']:
-            if int(time.mktime(datetime.now().timetuple())) - coins_bought[coin]['buy_unix_time'] >= 5 * 60:
+            if int(time.mktime(datetime.now().timetuple())) - coins_bought[coin]['buy_unix_time'] >= 370:#6 min 10 sec
                 coins_bought_coin_volume = coins_bought[coin]['volume'] if not coins_bought[coin]['isolated_margin_volume'] else coins_bought[coin]['isolated_margin_volume']
                 print(f"{txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}Time of the buy signal is ended, selling {coins_bought_coin_volume} {coin} - {BuyPrice} - {LastPrice} : {PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}")
 

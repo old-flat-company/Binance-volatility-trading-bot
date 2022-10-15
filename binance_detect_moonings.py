@@ -413,12 +413,13 @@ def buy():
     '''Place Buy market orders for each volatile coin found'''
     volume, isolated_margin_volume, last_price = convert_volume()
     orders = {}
+    buy_unix_time={}
     for coin in volume:
-
         # only buy if the there are no active trades on the coin
         if coin not in coins_bought:
             print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
             curr_unix_time = time.mktime(datetime.now().timetuple())
+            buy_unix_time['coin'] = 0
             curr_minus_delta_time = curr_unix_time - 20 * 60
             if TEST_MODE:
                 if STATUS == 'main':
@@ -476,6 +477,7 @@ def buy():
                                           volume=volume,
                                           isolated_margin_volume=isolated_margin_volume,
                                           orders=orders)
+                            buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
                             continue
                             # buy_limit = client.create_order(symbol=coin,
                             #                                 side='BUY',
@@ -507,6 +509,7 @@ def buy():
                             res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
                                                                                isolated_margin_volume=isolated_margin_volume,
                                                                                orders=orders)
+                            buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
                             if res_isolated_margin_buy:
                                 continue
                             else: #if we have some error in isolated_margin_buy -- try to use spot account
@@ -523,12 +526,14 @@ def buy():
                                                       volume=volume,
                                                       orders=orders,
                                                       isolated_margin_volume=isolated_margin_volume)
+                                        buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
 
                                 else: # if  we have not any money  in the isolated  margin account  --all money in the spot account. Let's use it
                                     core_spot_buy(coin=coin,
                                                   volume=volume,
                                                   orders=orders,
                                                   isolated_margin_volume=isolated_margin_volume)
+                                    buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
 
                                 # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
                                 #                                         symbol=coin,
@@ -575,7 +580,7 @@ def buy():
         else:
             print(f'Signal detected, but there is already an active trade on {coin}')
 
-    return orders, last_price, volume, isolated_margin_volume
+    return orders, last_price, volume, isolated_margin_volume, buy_unix_time
 
 
 # def core_sell(coin='', LastPrice=None, BuyPrice=None, PriceChange=None, coins_sold=None):
@@ -809,6 +814,122 @@ def sell_coins():
                     session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
                 continue
 
+        #---------------start the block "checking time after buy" -------------
+        if coins_bought[coin]['buy_unix_time']:
+            if int(time.mktime(datetime.now().timetuple())) - coins_bought[coin]['buy_unix_time'] >= 5 * 60:
+                coins_bought_coin_volume = coins_bought[coin]['volume'] if not coins_bought[coin]['isolated_margin_volume'] else coins_bought[coin]['isolated_margin_volume']
+                print(f"{txcolors.SELL_PROFIT if PriceChange >= 0. else txcolors.SELL_LOSS}Time of the buy signal is ended, selling {coins_bought_coin_volume} {coin} - {BuyPrice} - {LastPrice} : {PriceChange-(TRADING_FEE*2):.2f}% Est:${(QUANTITY*(PriceChange-(TRADING_FEE*2)))/100:.2f}{txcolors.DEFAULT}")
+
+                if not TEST_MODE:
+                    if STATUS == 'main':
+                        # if not MARGIN:  # use spot account
+                        coin_isolated_margin_volume = coins_bought[coin]['isolated_margin_volume']
+                        if not coin_isolated_margin_volume:  # use spot account
+                            print("sell_coins --- coin_isolated_margin_volume == {}".format(coin_isolated_margin_volume))
+                            print('sell_coins --- use spot account')
+                            sell_coins_limit = client.create_order(symbol=coin,
+                                                                   side='SELL',
+                                                                   type='MARKET',
+                                                                   quantity=coins_bought[coin]['volume'])
+
+                        # elif MARGIN: # use isolated margin account
+                        elif coin_isolated_margin_volume:
+                            print("sell_coins --- coin_isolated_margin_volume == {}".format(coin_isolated_margin_volume))
+                            print('sell_coins --- use isolated margin account')
+                            print('Time of the buy signal is ended')
+                            account_data = client.get_isolated_margin_account(symbols=coin)
+                            free_base_money = account_data['assets'][0]['baseAsset']['free']
+                            sell_margin_order = client.create_margin_order(symbol=coin,
+                                                                           side=client.SIDE_SELL,
+                                                                           type=client.ORDER_TYPE_MARKET,
+                                                                           sideEffectType="AUTO_REPAY",
+                                                                           isIsolated='TRUE',
+                                                                           # quantity=coins_bought[coin]['volume']
+                                                                           quantity=asset_with_correct_step_size(asset=free_base_money,
+                                                                                                                 symbol=coin)
+                                                                           )
+
+                            last_coin_pair_name = coin
+                            # # values of baseAsset and quoteAsset  was changed  - get it again
+                            # account_data = client.get_isolated_margin_account(symbols=coin)
+                            # free_base_money = account_data['assets'][0]['baseAsset']['free']
+                            # free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                            # # from isolated to spot
+                            # if free_quote_money !='0':
+                            #     client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                            #                                             symbol=coin,
+                            #                                             amount=free_quote_money)
+                            #
+                            # if free_base_money !='0':
+                            #     client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
+                            #                                             symbol=coin,
+                            #                                             amount=free_base_money)
+
+
+                        coins_sold[coin] = coins_bought[coin]
+                        # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
+                        volatility_cooloff[coin] = datetime.now()
+                        # Log trade
+                        if LOG_TRADES:
+                            coins_sold_volume = coins_sold[coin]['volume'] if not coins_bought[coin]['isolated_margin_volume'] else coins_sold[coin]['isolated_margin_volume']
+
+                            profit = ((LastPrice - BuyPrice) * coins_sold_volume) * (1 - (TRADING_FEE * 2))  # adjust for trading fee here
+                            write_log(
+                                f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
+
+                            curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+                            curr_res = "+" if profit >= 0.0 else "-"
+                            efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
+                            # write to the efficiency_log file
+                            efficiency_log(curr_unix_time=curr_unix_time,
+                                           efficiency_result=curr_res,
+                                           efficiency_coeff=efficiency_coef)
+                            # write to the db
+                            table_last_sold_pairs_data_write_new_data(conn=connect,
+                                                                      pair_name=coin,
+                                                                      last_sold_time=str(efficiency_coef_processed_time))
+                            session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
+                        continue
+
+
+                else: #if TEST_MODE==True
+                    coins_sold[coin] = coins_bought[coin]
+                    # prevent system from buying this coin for the next TIME_DIFFERENCE minutes
+                    volatility_cooloff[coin] = datetime.now()
+                    # Log trade
+                    if LOG_TRADES:
+                        profit = ((LastPrice - BuyPrice) * coins_sold[coin]['volume']) * (1 - (TRADING_FEE * 2))  # adjust for trading fee here
+                        write_log(
+                            f"Sell: {coins_sold[coin]['volume']} {coin} - {BuyPrice} - {LastPrice} Profit: {profit:.2f} {PriceChange - (TRADING_FEE * 2):.2f}%")
+
+                        curr_unix_time = int(time.mktime(datetime.now().timetuple()))
+                        curr_res = "+" if profit >= 0.0 else "-"
+                        efficiency_coef, efficiency_coef_processed_time = calculate_efficiency_lib(curr_res=curr_res)
+                        positive_set, positive_set_processed_time = calculate_last_positive_negative()
+                        # write to the efficiency_log file
+                        efficiency_log(curr_unix_time=curr_unix_time,
+                                       efficiency_result=curr_res,
+                                       efficiency_coeff=efficiency_coef)
+                        # write to the db
+                        if STATUS == 'statistics':
+                            table_calculate_efficiency_write_data(conn=connect,
+                                                                  efficiency_coef=efficiency_coef,
+                                                                  efficiency_coef_processed_time=str(efficiency_coef_processed_time),
+                                                                  positive_set=positive_set,
+                                                                  positive_set_processed_time=str(positive_set_processed_time))
+
+                        if STATUS == 'main':
+                            table_last_sold_pairs_data_write_new_data(conn=connect,
+                                                                      pair_name=coin,
+                                                                      last_sold_time=str(efficiency_coef_processed_time))
+
+                        session_profit = session_profit + (PriceChange - (TRADING_FEE * 2))
+                    continue
+
+
+        #--------------- end the block "checking time after buy"- -------------
+
+
 
         # no action; print once every TIME_DIFFERENCE
         if hsp_head == 1:
@@ -820,7 +941,7 @@ def sell_coins():
     return last_coin_pair_name, coins_sold
 
 
-def update_portfolio(orders, last_price, volume, isolated_margin_volume):
+def update_portfolio(orders, last_price, volume, isolated_margin_volume,buy_unix_time):
     '''add every coin bought to our portfolio for tracking/selling later'''
     if DEBUG:
         print(orders)
@@ -837,6 +958,7 @@ def update_portfolio(orders, last_price, volume, isolated_margin_volume):
             'bought_at': last_price[coin]['price'],
             'volume': volume[coin],
             'isolated_margin_volume': isolated_margin_volume[coin],
+            'buy_unix_time': buy_unix_time[coin],
             'stop_loss': -STOP_LOSS,
             'take_profit': TAKE_PROFIT,
             }
@@ -1039,8 +1161,8 @@ if __name__ == '__main__':
     while True:
         try:
             # coins_close_manually, stop_main_script_manually = manage_in_running()
-            orders, last_price, volume, isolated_margin_volume = buy()
-            update_portfolio(orders, last_price, volume, isolated_margin_volume)
+            orders, last_price, volume, isolated_margin_volume, buy_unix_time = buy()
+            update_portfolio(orders, last_price, volume, isolated_margin_volume, buy_unix_time)
             # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
             last_coin_pair_name, coins_sold = sell_coins()
             if last_coin_pair_name:

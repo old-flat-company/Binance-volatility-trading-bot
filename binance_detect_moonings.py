@@ -419,7 +419,7 @@ def buy():
         if coin not in coins_bought:
             print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
             curr_unix_time = time.mktime(datetime.now().timetuple())
-            buy_unix_time['coin'] = 0
+            buy_unix_time[coin] = 0
             curr_minus_delta_time = curr_unix_time - 20 * 60
             if TEST_MODE:
                 if STATUS == 'main':
@@ -477,7 +477,7 @@ def buy():
                                           volume=volume,
                                           isolated_margin_volume=isolated_margin_volume,
                                           orders=orders)
-                            buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
+                            buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
                             continue
                             # buy_limit = client.create_order(symbol=coin,
                             #                                 side='BUY',
@@ -509,7 +509,7 @@ def buy():
                             res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
                                                                                isolated_margin_volume=isolated_margin_volume,
                                                                                orders=orders)
-                            buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
+                            buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
                             if res_isolated_margin_buy:
                                 continue
                             else: #if we have some error in isolated_margin_buy -- try to use spot account
@@ -526,14 +526,14 @@ def buy():
                                                       volume=volume,
                                                       orders=orders,
                                                       isolated_margin_volume=isolated_margin_volume)
-                                        buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
+                                        buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
 
                                 else: # if  we have not any money  in the isolated  margin account  --all money in the spot account. Let's use it
                                     core_spot_buy(coin=coin,
                                                   volume=volume,
                                                   orders=orders,
                                                   isolated_margin_volume=isolated_margin_volume)
-                                    buy_unix_time['coin'] = int(time.mktime(datetime.now().timetuple()))
+                                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
 
                                 # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
                                 #                                         symbol=coin,

@@ -361,6 +361,17 @@ def activate_or_enable_isolated_margin_account(symbol=''):
         return enable_isolated_margin_account(symbol=symbol)
 
 
+def check_isolated_margin_symbol(symbol=''):
+    try:
+        res = client.get_isolated_margin_symbol(symbol=symbol)
+        if res:
+            return True
+    except Exception as e:
+        if 'Pair not found' in e.message:
+            print(e.message)
+            return False
+
+
 def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None):
     try:
 
@@ -506,6 +517,8 @@ def buy():
                             # https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
                             # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
                         elif MARGIN:# use isolated margin account
+                            if not check_isolated_margin_symbol(symbol=coin):
+                                continue
                             res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
                                                                                isolated_margin_volume=isolated_margin_volume,
                                                                                orders=orders)

@@ -151,14 +151,14 @@ def wait_for_price():
 
     pause_bot()
 
-    # if historical_prices[hsp_head]['BNB' + PAIR_WITH]['time'] > datetime.now() - timedelta(minutes=float(TIME_DIFFERENCE / RECHECK_INTERVAL)):
-    #
-    #     # sleep for exactly the amount of time required
-    #     time.sleep((timedelta(minutes=float(TIME_DIFFERENCE / RECHECK_INTERVAL)) - (datetime.now() - historical_prices[hsp_head]['BNB' + PAIR_WITH]['time'])).total_seconds())
+    if historical_prices[hsp_head]['BNB' + PAIR_WITH]['time'] > datetime.now() - timedelta(minutes=float(TIME_DIFFERENCE / RECHECK_INTERVAL)):
+
+        # sleep for exactly the amount of time required
+        time.sleep((timedelta(minutes=float(TIME_DIFFERENCE / RECHECK_INTERVAL)) - (datetime.now() - historical_prices[hsp_head]['BNB' + PAIR_WITH]['time'])).total_seconds())
 
     #get price each 1 sec
-    time.sleep(1)
-    print(f'Working...Session profit:{session_profit:.2f}% Est:${(QUANTITY * session_profit)/100:.2f}')
+    # time.sleep(1)
+    # print(f'Working...Session profit:{session_profit:.2f}% Est:${(QUANTITY * session_profit)/100:.2f}')
     # retreive latest prices
     get_price()
 
@@ -199,15 +199,15 @@ def wait_for_price():
     #print(f'Up: {coins_up} Down: {coins_down} Unchanged: {coins_unchanged}')
 
     # Here goes new code for external signalling
-    externals = external_signals()
-    exnumber = 0
-
-    for excoin in externals:
-        if excoin not in volatile_coins and excoin not in coins_bought and \
-                (len(coins_bought) + exnumber + len(volatile_coins)) < MAX_COINS:
-            volatile_coins[excoin] = 1
-            exnumber +=1
-            print(f'External signal received on {excoin}, calculating volume in {PAIR_WITH}')
+    # externals = external_signals()
+    # exnumber = 0
+    #
+    # for excoin in externals:
+    #     if excoin not in volatile_coins and excoin not in coins_bought and \
+    #             (len(coins_bought) + exnumber + len(volatile_coins)) < MAX_COINS:
+    #         volatile_coins[excoin] = 1
+    #         exnumber +=1
+    #         print(f'External signal received on {excoin}, calculating volume in {PAIR_WITH}')
 
     return volatile_coins, len(volatile_coins), historical_prices[hsp_head]
 
@@ -1154,19 +1154,19 @@ if __name__ == '__main__':
             if DEBUG: print(f'{txcolors.WARNING}Could not remove external signalling file {filename}{txcolors.DEFAULT}')
 
     # load signalling modules
-    try:
-        if len(SIGNALLING_MODULES) > 0:
-            for module in SIGNALLING_MODULES:
-                print(f'Starting {module}')
-                mymodule[module] = importlib.import_module(module)
-                t = threading.Thread(target=mymodule[module].do_work, args=())
-                t.daemon = True
-                t.start()
-                time.sleep(2)
-        else:
-            print(f'No modules to load {SIGNALLING_MODULES}')
-    except Exception as e:
-        print(e)
+    # try:
+    #     if len(SIGNALLING_MODULES) > 0:
+    #         for module in SIGNALLING_MODULES:
+    #             print(f'Starting {module}')
+    #             mymodule[module] = importlib.import_module(module)
+    #             t = threading.Thread(target=mymodule[module].do_work, args=())
+    #             t.daemon = True
+    #             t.start()
+    #             time.sleep(2)
+    #     else:
+    #         print(f'No modules to load {SIGNALLING_MODULES}')
+    # except Exception as e:
+    #     print(e)
 
     # seed initial prices
     get_price()

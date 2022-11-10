@@ -420,6 +420,20 @@ def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None
         return False
 
 
+def transfer_from_isolated_margin_to_spot_for_buy(symbol=''):
+    try:
+        account_data = client.get_isolated_margin_account(symbols=symbol)
+        free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+        if free_quote_money != '0':  # if we have some money to the transaction
+            transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                                                  symbol=symbol,
+                                                                  amount=free_quote_money)
+            return True if transaction.get('tranId') else False
+        return False
+    except Exception as e:
+        print(e)
+        return False
+
 
 def buy():
     '''Place Buy market orders for each volatile coin found'''
@@ -528,21 +542,27 @@ def buy():
                                 continue
                             else: #if we have some error in isolated_margin_buy -- try to use spot account
 
-                                account_data = client.get_isolated_margin_account(symbols=coin)
-                                free_quote_money = account_data['assets'][0]['quoteAsset']['free']
-                                # free_base_money = account_data['assets'][0]['baseAsset']['free']
-                                if free_quote_money != '0':  # if we have some money to the transaction
-                                    transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
-                                                                                          symbol=coin,
-                                                                                          amount=free_quote_money)
-                                    if transaction.get('tranId'):
-                                        core_spot_buy(coin=coin,
-                                                      volume=volume,
-                                                      orders=orders,
-                                                      isolated_margin_volume=isolated_margin_volume)
-                                        buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
+                                # account_data = client.get_isolated_margin_account(symbols=coin)
+                                # free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                                # # free_base_money = account_data['assets'][0]['baseAsset']['free']
+                                # if free_quote_money != '0':  # if we have some money to the transaction
+                                #     transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                                #                                                           symbol=coin,
+                                #                                                           amount=free_quote_money)
 
-                                else: # if  we have not any money  in the isolated  margin account  --all money in the spot account. Let's use it
+                                if transfer_from_isolated_margin_to_spot_for_buy(symbol=coin):
+                                # if transaction.get('tranId'):
+                                    core_spot_buy(coin=coin,
+                                                  volume=volume,
+                                                  orders=orders,
+                                                  isolated_margin_volume=isolated_margin_volume)
+                                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
+
+
+                                else:
+                                    # if we have not any money in the isolated  margin account
+                                    # or it was some problems with the transfer it to the spot account
+                                    # try to use the spot account
                                     core_spot_buy(coin=coin,
                                                   volume=volume,
                                                   orders=orders,
@@ -641,7 +661,7 @@ def buy():
 # def sell_coins(coins_close_manually=[]):
 
 
-def transfer_from_margin_to_spot(symbol=''):
+def transfer_from_isolated_margin_to_spot_for_sell(symbol=''):
     try:
         account_data = client.get_isolated_margin_account(symbols=symbol)
         free_quote_money = account_data['assets'][0]['quoteAsset']['free']
@@ -1180,7 +1200,7 @@ if __name__ == '__main__':
             # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
             last_coin_pair_name, coins_sold = sell_coins()
             if last_coin_pair_name:
-                transfer_from_margin_to_spot(symbol=last_coin_pair_name)
+                transfer_from_isolated_margin_to_spot_for_sell(symbol=last_coin_pair_name)
             remove_from_portfolio(coins_sold)
         except ReadTimeout as rt:
             READ_TIMEOUT_COUNT += 1

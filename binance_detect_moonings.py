@@ -66,7 +66,12 @@ from db_connection import (connect,
                            table_calculate_efficiency_read_data,
                            table_calculate_efficiency_write_data,
                            table_last_sold_pairs_data_write_new_data,
-                           table_last_sold_pairs_data_read_data_by_pair_name)
+                           table_last_sold_pairs_data_read_data_by_pair_name,
+
+                           table_margin_buy_sell_custom_signal_read_data,
+                           table_margin_buy_sell_custom_signal_set_default_value,
+                           table_margin_buy_sell_custom_signal_write_data
+                           )
 
 from check_pairs_activity import check_coin_pair_activity
 
@@ -225,6 +230,16 @@ def wait_for_price():
     return volatile_coins, len(volatile_coins), historical_prices[hsp_head]
 
 
+def wait_for_price_from_db_table(custom_pair_name=''):
+    '''calls the initial price and ensures the correct amount of time has passed
+    before reading the current price again'''
+    volatile_coins = {custom_pair_name: 1}
+    last_price = {custom_pair_name:
+                      {'price': client.get_symbol_ticker(symbol=custom_pair_name).get('price')}
+                  }
+    return volatile_coins, len(volatile_coins), last_price
+
+
 def external_signals():
     external_list = {}
     signals = {}
@@ -290,10 +305,11 @@ def asset_with_correct_step_size(asset=None, symbol=''):
     return number
 
 
-def convert_volume():
+def convert_volume(custom_pair_name=''):
     '''Converts the volume given in QUANTITY from USDT to the each coin's volume'''
 
-    volatile_coins, number_of_coins, last_price = wait_for_price()
+    volatile_coins, number_of_coins, last_price = wait_for_price_from_db_table(custom_pair_name=custom_pair_name)
+
     volume = {}
     isolated_margin_volume = {}
     for coin in volatile_coins:
@@ -448,181 +464,188 @@ def transfer_from_isolated_margin_to_spot_for_buy(symbol=''):
         return False
 
 
-def buy():
+def check_pair_name_from_table_margin_buy_sell_custom_signal():
+    pair_name, buy, buy_time, sell = table_margin_buy_sell_custom_signal_read_data(conn=connect)
+    if not pair_name or pair_name == 'False':
+        return False
+    else:
+        return pair_name
+
+
+def buy(custom_pair_name=''):
     '''Place Buy market orders for each volatile coin found'''
-    volume, isolated_margin_volume, last_price = convert_volume()
+
+    volume, isolated_margin_volume, last_price = convert_volume(custom_pair_name=custom_pair_name)
     orders = {}
     buy_unix_time={}
     for coin in volume:
         # only buy if the there are no active trades on the coin
         if coin not in coins_bought:
-            print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
-            curr_unix_time = time.mktime(datetime.now().timetuple())
-            buy_unix_time[coin] = 0
-            curr_minus_delta_time = curr_unix_time - 20 * 60
-            if TEST_MODE:
-                if STATUS == 'main':
-                    if check_coin_pair_activity(connect=connect, pair_names=[coin]):
-                        efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
-                        if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-                                 (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+        #     print(f"{txcolors.BUY}Preparing to buy {volume[coin]} {coin}{txcolors.DEFAULT}")
+        #     curr_unix_time = time.mktime(datetime.now().timetuple())
+        #     buy_unix_time[coin] = 0
+        #     curr_minus_delta_time = curr_unix_time - 20 * 60
+        #     if TEST_MODE:
+        #         if STATUS == 'main':
+        #             if check_coin_pair_activity(connect=connect, pair_names=[coin]):
+        #                 efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
+        #                 if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+        #                          (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+        #
+        #                     orders[coin] = [{
+        #                         'symbol': coin,
+        #                         'orderId': 0,
+        #                         'time': datetime.now().timestamp()
+        #                     }]
+        #                     # Log trade
+        #                     if LOG_TRADES:
+        #                         write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+        #         elif STATUS == 'statistics':
+        #             orders[coin] = [{
+        #                 'symbol': coin,
+        #                 'orderId': 0,
+        #                 'time': datetime.now().timestamp()
+        #             }]
+        #             # Log trade
+        #             if LOG_TRADES:
+        #                 write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
+        #         continue
+        #     # try to create a real order if the test orders did not raise an exception
+        #     # try:
+        #     #     if STATUS == 'main' and not TEST_MODE:
+        #     #         if check_coin_pair_activity(connect=connect, pair_names=[coin]):
+        #     #             efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
+        #     #             if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+        #     #                      (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
+        #     #                 buy_limit = client.create_order(
+        #     #                     symbol=coin,
+        #     #                     side='BUY',
+        #     #                     type='MARKET',
+        #     #                     quantity=volume[coin]
+        #     #                 )
+        #     #
+        #     # # error handling here in case position cannot be placed
+        #     # except Exception as e:
+        #     #     print(e)
+        #
+        #     # run the else block if the position has been placed and return order info
+            if STATUS == 'main' and not TEST_MODE:
+                # if check_coin_pair_activity(connect=connect, pair_names=[coin]):
+                #     efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
+                #     if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
+                #             (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
-                            orders[coin] = [{
-                                'symbol': coin,
-                                'orderId': 0,
-                                'time': datetime.now().timestamp()
-                            }]
-                            # Log trade
-                            if LOG_TRADES:
-                                write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
-                elif STATUS == 'statistics':
-                    orders[coin] = [{
-                        'symbol': coin,
-                        'orderId': 0,
-                        'time': datetime.now().timestamp()
-                    }]
-                    # Log trade
-                    if LOG_TRADES:
-                        write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
-                continue
-            # try to create a real order if the test orders did not raise an exception
-            # try:
-            #     if STATUS == 'main' and not TEST_MODE:
-            #         if check_coin_pair_activity(connect=connect, pair_names=[coin]):
-            #             efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
-            #             if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-            #                      (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
-            #                 buy_limit = client.create_order(
-            #                     symbol=coin,
-            #                     side='BUY',
-            #                     type='MARKET',
-            #                     quantity=volume[coin]
-            #                 )
-            #
-            # # error handling here in case position cannot be placed
-            # except Exception as e:
-            #     print(e)
+                if not MARGIN:# use spot account
+                    core_spot_buy(coin=coin,
+                                  volume=volume,
+                                  isolated_margin_volume=isolated_margin_volume,
+                                  orders=orders)
+                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
+                    continue
+                    # buy_limit = client.create_order(symbol=coin,
+                    #                                 side='BUY',
+                    #                                 type='MARKET',
+                    #                                 quantity=volume[coin])
+                    #
+                    # orders[coin] = client.get_all_orders(symbol=coin, limit=1)
+                    #
+                    # # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                    # while orders[coin] == []:
+                    #     print('Binance is being slow in returning the order, calling the API again...')
+                    #
+                    #     orders[coin] = client.get_all_orders(symbol=coin, limit=1)
+                    #     time.sleep(1)
+                    #
+                    # else:
+                    #     print('Order returned, saving order to file')
+                    #
+                    #     # Log trade
+                    #     if LOG_TRADES:
+                    #         write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
 
-            # run the else block if the position has been placed and return order info
 
-            elif STATUS == 'main' and not TEST_MODE:
-                if check_coin_pair_activity(connect=connect, pair_names=[coin]):
-                    efficiency_coef, positive_set, efficiency_coef_processed_time, positive_set_processed_time = table_calculate_efficiency_read_data(conn=connect)
-                    if (float(efficiency_coef) > 0.8 and int(efficiency_coef_processed_time) >= curr_minus_delta_time) or \
-                            (positive_set and int(positive_set_processed_time) >= curr_minus_delta_time):
 
-                        if not MARGIN:# use spot account
+                    # more info  for isolated margin account
+                    # https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
+                    # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
+                elif MARGIN:# use isolated margin account
+                    if not check_isolated_margin_symbol(symbol=coin):
+                        continue
+                    res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
+                                                                       isolated_margin_volume=isolated_margin_volume,
+                                                                       orders=orders)
+                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
+                    if res_isolated_margin_buy:
+                        continue
+                    else: #if we have some error in isolated_margin_buy -- try to use spot account
+
+                        # account_data = client.get_isolated_margin_account(symbols=coin)
+                        # free_quote_money = account_data['assets'][0]['quoteAsset']['free']
+                        # # free_base_money = account_data['assets'][0]['baseAsset']['free']
+                        # if free_quote_money != '0':  # if we have some money to the transaction
+                        #     transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
+                        #                                                           symbol=coin,
+                        #                                                           amount=free_quote_money)
+
+                        if transfer_from_isolated_margin_to_spot_for_buy(symbol=coin):
+                        # if transaction.get('tranId'):
                             core_spot_buy(coin=coin,
                                           volume=volume,
-                                          isolated_margin_volume=isolated_margin_volume,
-                                          orders=orders)
+                                          orders=orders,
+                                          isolated_margin_volume=isolated_margin_volume)
                             buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
-                            continue
-                            # buy_limit = client.create_order(symbol=coin,
-                            #                                 side='BUY',
-                            #                                 type='MARKET',
-                            #                                 quantity=volume[coin])
-                            #
-                            # orders[coin] = client.get_all_orders(symbol=coin, limit=1)
-                            #
-                            # # binance sometimes returns an empty list, the code will wait here until binance returns the order
-                            # while orders[coin] == []:
-                            #     print('Binance is being slow in returning the order, calling the API again...')
-                            #
-                            #     orders[coin] = client.get_all_orders(symbol=coin, limit=1)
-                            #     time.sleep(1)
-                            #
-                            # else:
-                            #     print('Order returned, saving order to file')
-                            #
-                            #     # Log trade
-                            #     if LOG_TRADES:
-                            #         write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
 
 
-
-                            # more info  for isolated margin account
-                            # https://stackoverflow.com/questions/60736731/what-is-the-problem-with-my-code-in-borrowing-cryptocurrency-with-api-in-binance
-                            # https://stackoverflow.com/questions/66558035/binance-python-api-margin-order-incomplete-repay-loan
-                        elif MARGIN:# use isolated margin account
-                            if not check_isolated_margin_symbol(symbol=coin):
-                                continue
-                            res_isolated_margin_buy = core_isolated_margin_buy(coin=coin,
-                                                                               isolated_margin_volume=isolated_margin_volume,
-                                                                               orders=orders)
+                        else:
+                            # if we have not any money in the isolated  margin account
+                            # or it was some problems with the transfer it to the spot account
+                            # try to use the spot account
+                            core_spot_buy(coin=coin,
+                                          volume=volume,
+                                          orders=orders,
+                                          isolated_margin_volume=isolated_margin_volume)
                             buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
-                            if res_isolated_margin_buy:
-                                continue
-                            else: #if we have some error in isolated_margin_buy -- try to use spot account
 
-                                # account_data = client.get_isolated_margin_account(symbols=coin)
-                                # free_quote_money = account_data['assets'][0]['quoteAsset']['free']
-                                # # free_base_money = account_data['assets'][0]['baseAsset']['free']
-                                # if free_quote_money != '0':  # if we have some money to the transaction
-                                #     transaction = client.transfer_isolated_margin_to_spot(asset=PAIR_WITH,
-                                #                                                           symbol=coin,
-                                #                                                           amount=free_quote_money)
+                        # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
+                        #                                         symbol=coin,
+                        #                                         amount=free_base_money)
 
-                                if transfer_from_isolated_margin_to_spot_for_buy(symbol=coin):
-                                # if transaction.get('tranId'):
-                                    core_spot_buy(coin=coin,
-                                                  volume=volume,
-                                                  orders=orders,
-                                                  isolated_margin_volume=isolated_margin_volume)
-                                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
+                        continue
 
-
-                                else:
-                                    # if we have not any money in the isolated  margin account
-                                    # or it was some problems with the transfer it to the spot account
-                                    # try to use the spot account
-                                    core_spot_buy(coin=coin,
-                                                  volume=volume,
-                                                  orders=orders,
-                                                  isolated_margin_volume=isolated_margin_volume)
-                                    buy_unix_time[coin] = int(time.mktime(datetime.now().timetuple()))
-
-                                # client.transfer_isolated_margin_to_spot(asset=coin[:-len(PAIR_WITH)],  # base coin name
-                                #                                         symbol=coin,
-                                #                                         amount=free_base_money)
-
-                                continue
-
-                            # try:
-                            #     # volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
-                            #     transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
-                            #                                                           symbol=coin,
-                            #                                                           amount=str(QUANTITY))
-                            #
-                            #     if transaction.get('tranId'): #transaction from spot to isolated_margin was successful
-                            #         buy_margin_order = client.create_margin_order(symbol=coin,
-                            #                                                       side=client.SIDE_BUY,
-                            #                                                       type=client.ORDER_TYPE_MARKET,
-                            #                                                      # timeInForce=client.TIME_IN_FORCE_GTC,
-                            #                                                       sideEffectType="MARGIN_BUY",
-                            #                                                       isIsolated='TRUE',
-                            #                                                       quantity=isolated_margin_volume[coin])
-                            #
-                            #
-                            #         orders[coin] = client.get_all_margin_orders(symbol=coin,
-                            #                                                     isIsolated='TRUE',
-                            #                                                     limit=1)
-                            #         # binance sometimes returns an empty list, the code will wait here until binance returns the order
-                            #         while orders[coin] == []:
-                            #             print('Binance is being slow in returning the order, calling the API again...')
-                            #             orders[coin] = client.get_all_margin_orders(symbol=coin,
-                            #                                                         isIsolated='TRUE',
-                            #                                                         limit=1)
-                            #             time.sleep(1)
-                            #         else:
-                            #             print('Margin order returned, saving order to file')
-                            #             # Log trade
-                            #             if LOG_TRADES:
-                            #                 write_log(f"Buy (margin account): {volume[coin]} {coin} - {last_price[coin]['price']}")
-                            # except Exception as e:
-                            #     print('error buy in isolated margin account')
-                            #     print(e)
-
+                    # try:
+                    #     # volume[coin] = volume[coin] * MARGIN_LEVERAGE_COEFFICIENT
+                    #     transaction = client.transfer_spot_to_isolated_margin(asset=PAIR_WITH,
+                    #                                                           symbol=coin,
+                    #                                                           amount=str(QUANTITY))
+                    #
+                    #     if transaction.get('tranId'): #transaction from spot to isolated_margin was successful
+                    #         buy_margin_order = client.create_margin_order(symbol=coin,
+                    #                                                       side=client.SIDE_BUY,
+                    #                                                       type=client.ORDER_TYPE_MARKET,
+                    #                                                      # timeInForce=client.TIME_IN_FORCE_GTC,
+                    #                                                       sideEffectType="MARGIN_BUY",
+                    #                                                       isIsolated='TRUE',
+                    #                                                       quantity=isolated_margin_volume[coin])
+                    #
+                    #
+                    #         orders[coin] = client.get_all_margin_orders(symbol=coin,
+                    #                                                     isIsolated='TRUE',
+                    #                                                     limit=1)
+                    #         # binance sometimes returns an empty list, the code will wait here until binance returns the order
+                    #         while orders[coin] == []:
+                    #             print('Binance is being slow in returning the order, calling the API again...')
+                    #             orders[coin] = client.get_all_margin_orders(symbol=coin,
+                    #                                                         isIsolated='TRUE',
+                    #                                                         limit=1)
+                    #             time.sleep(1)
+                    #         else:
+                    #             print('Margin order returned, saving order to file')
+                    #             # Log trade
+                    #             if LOG_TRADES:
+                    #                 write_log(f"Buy (margin account): {volume[coin]} {coin} - {last_price[coin]['price']}")
+                    # except Exception as e:
+                    #     print('error buy in isolated margin account')
+                    #     print(e)
 
         else:
             print(f'Signal detected, but there is already an active trade on {coin}')
@@ -1208,13 +1231,19 @@ if __name__ == '__main__':
     while True:
         try:
             # coins_close_manually, stop_main_script_manually = manage_in_running()
-            orders, last_price, volume, isolated_margin_volume, buy_unix_time = buy()
-            update_portfolio(orders, last_price, volume, isolated_margin_volume, buy_unix_time)
-            # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
-            last_coin_pair_name, coins_sold = sell_coins()
-            if last_coin_pair_name:
-                transfer_from_isolated_margin_to_spot_for_sell(symbol=last_coin_pair_name)
-            remove_from_portfolio(coins_sold)
+
+            custom_pair_name = check_pair_name_from_table_margin_buy_sell_custom_signal()
+            if not custom_pair_name:
+                time.sleep((timedelta(minutes=float(TIME_DIFFERENCE / RECHECK_INTERVAL))).total_seconds())
+                continue
+            else:
+                orders, last_price, volume, isolated_margin_volume, buy_unix_time = buy(custom_pair_name=custom_pair_name)
+                update_portfolio(orders, last_price, volume, isolated_margin_volume, buy_unix_time)
+                # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
+                last_coin_pair_name, coins_sold = sell_coins()
+                if last_coin_pair_name:
+                    transfer_from_isolated_margin_to_spot_for_sell(symbol=last_coin_pair_name)
+                remove_from_portfolio(coins_sold)
         except ReadTimeout as rt:
             READ_TIMEOUT_COUNT += 1
             print(f'{txcolors.WARNING}We got a timeout error from from binance. Going to re-loop. Current Count: {READ_TIMEOUT_COUNT}\n{rt}{txcolors.DEFAULT}')

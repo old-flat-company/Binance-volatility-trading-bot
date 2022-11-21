@@ -285,12 +285,11 @@ def table_margin_buy_sell_custom_signal_set_default_value(conn=None):
         buy = ''
         buy_time = ''
         sell = ''
-        custom_query = "INSERT INTO public.%s (pair_name, buy, buy_time, sell) VALUES ('%s', '%s', '%s', '%s');" % (
-            table_name,
-            pair_name,
-            buy,
-            buy_time,
-            sell)
+        custom_query = "UPDATE public.%s SET pair_name = '%s', buy = '%s', buy_time = '%s', sell = '%s' WHERE id = 1;" % (table_name,
+                                                                                                                          pair_name,
+                                                                                                                          buy,
+                                                                                                                          buy_time,
+                                                                                                                          sell)
         custom_cr.execute(custom_query)
         conn.commit()
         custom_cr.close()
@@ -311,22 +310,22 @@ def table_margin_buy_sell_custom_signal_write_data(conn=None,**kwargs):
     try:
         table_name = 'margin_buy_sell_custom_signal'
         if kwargs.get('pair_name'):
-            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('pair_name'))
+            custom_query = "UPDATE public.%s SET pair_name = '%s' WHERE id = 1;" % (table_name, kwargs.get('pair_name'))
             custom_cr.execute(custom_query)
             conn.commit()
 
         if kwargs.get('buy'):
-            custom_query = "INSERT INTO public.%s (buy) VALUES ('%s');" % (table_name, kwargs.get('buy'))
+            custom_query = "UPDATE public.%s SET buy = '%s' WHERE id = 1;" % (table_name, kwargs.get('buy'))
             custom_cr.execute(custom_query)
             conn.commit()
 
         if kwargs.get('buy_time'):
-            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('buy_time'))
+            custom_query = "UPDATE public.%s SET buy_time = '%s' WHERE id = 1;" % (table_name, kwargs.get('buy_time'))
             custom_cr.execute(custom_query)
             conn.commit()
 
         if kwargs.get('sell'):
-            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('sell'))
+            custom_query = "UPDATE public.%s SET sell = '%s' WHERE id = 1;" % (table_name, kwargs.get('sell'))
             custom_cr.execute(custom_query)
             conn.commit()
 
@@ -341,6 +340,15 @@ def table_margin_buy_sell_custom_signal_write_data(conn=None,**kwargs):
 
 if __name__ == '__main__':
     connect = connect()
+    # print(table_margin_buy_sell_custom_signal_read_data(conn=connect))
+    # print(table_margin_buy_sell_custom_signal_set_default_value(conn=connect))
+    # print(table_margin_buy_sell_custom_signal_write_data(conn=connect,
+    #                                                      pair_name='pair_name_test2',
+    #                                                      buy='buy_test2',
+    #                                                      buy_time='buy_time_test2',
+    #                                                      sell='sell_test2'))
+
+    #----------------------------------------------------
     # print(table_script_management_read_data(conn=connect))
     # table_script_management_write_data(conn=connect, close_pairs=['test6'])
 
@@ -356,6 +364,6 @@ if __name__ == '__main__':
     #                                           pair_name='test8_name',
     #                                           last_sold_time='test8_time')
 
-    print(table_last_sold_pairs_data_read_data_by_pair_name(conn=connect, pair_names=['test8_name']))
+    # print(table_last_sold_pairs_data_read_data_by_pair_name(conn=connect, pair_names=['test8_name']))
 
     # table_last_sold_pairs_data_del_old_data(conn=connect, ids=[4, 5])

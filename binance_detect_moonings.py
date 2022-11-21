@@ -106,7 +106,20 @@ class St_ampe_dOut:
         pass
 
 sys.stdout = St_ampe_dOut()
-
+#-----------custom indicators ------------------
+def get_sma(symbol='', period=7, interval=Client.KLINE_INTERVAL_1MINUTE):
+    """
+    https://python-binance.readthedocs.io/en/latest/binance.html?highlight=get_historical_klines#binance.client.Client.get_historical_klines
+    # list of OHLCV values (Open time, Open, High, Low, Close, Volume, Close time, Quote asset volume, Number of trades, Taker buy base asset volume, Taker buy quote asset volume, Ignore)
+     """
+    klines = client.get_historical_klines(symbol,  interval, '1 hour ago UTC')
+    # print(klines)
+    #last candles(period)data
+    period_klines=klines[-(period):]
+    period_klines_close_data = [float(kline_data[4]) for kline_data in period_klines]
+    # print(period_klines_close_data)
+    return sum(period_klines_close_data)/period
+#-----------------------------------------------
 
 def get_price(add_to_historical=True):
     '''Return the current price for all coins on binance'''

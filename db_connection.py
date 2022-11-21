@@ -250,6 +250,93 @@ def table_last_sold_pairs_data_del_old_data(conn=None, ids=[]):
         print(error)
         custom_cr.close()
         return False
+#-----------------------------------------------------------
+
+def table_margin_buy_sell_custom_signal_read_data(conn=None):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    try:
+        # create a cursor
+        custom_cr = conn.cursor()
+        # execute a statement
+        custom_query = 'SELECT pair_name, buy, buy_time, sell FROM public.margin_buy_sell_custom_signal WHERE id = 1;'
+        custom_cr.execute(custom_query)
+        unprocessed_data_list = custom_cr.fetchall()
+        pair_name, buy, buy_time, sell = unprocessed_data_list[0]
+        custom_cr.close()
+        return pair_name, buy, buy_time, sell
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return False, False, False
+
+
+def table_margin_buy_sell_custom_signal_set_default_value(conn=None):
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    # create a cursor
+    custom_cr = conn.cursor()
+    try:
+        table_name = 'margin_buy_sell_custom_signal'
+        pair_name = 'False'
+        buy = ''
+        buy_time = ''
+        sell = ''
+        custom_query = "INSERT INTO public.%s (pair_name, buy, buy_time, sell) VALUES ('%s', '%s', '%s', '%s');" % (
+            table_name,
+            pair_name,
+            buy,
+            buy_time,
+            sell)
+        custom_cr.execute(custom_query)
+        conn.commit()
+        custom_cr.close()
+        return True
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return False
+
+
+def table_margin_buy_sell_custom_signal_write_data(conn=None,**kwargs):
+
+    '''
+    :param conn:  DB connection object
+    :return:
+    '''
+    # create a cursor
+    custom_cr = conn.cursor()
+    try:
+        table_name = 'margin_buy_sell_custom_signal'
+        if kwargs.get('pair_name'):
+            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('pair_name'))
+            custom_cr.execute(custom_query)
+            conn.commit()
+
+        if kwargs.get('buy'):
+            custom_query = "INSERT INTO public.%s (buy) VALUES ('%s');" % (table_name, kwargs.get('buy'))
+            custom_cr.execute(custom_query)
+            conn.commit()
+
+        if kwargs.get('buy_time'):
+            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('buy_time'))
+            custom_cr.execute(custom_query)
+            conn.commit()
+
+        if kwargs.get('sell'):
+            custom_query = "INSERT INTO public.%s (buy_time) VALUES ('%s');" % (table_name, kwargs.get('sell'))
+            custom_cr.execute(custom_query)
+            conn.commit()
+
+        custom_cr.close()
+
+        return True
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+        return False
+
 
 
 if __name__ == '__main__':

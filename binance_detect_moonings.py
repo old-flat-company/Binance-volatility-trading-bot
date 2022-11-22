@@ -1238,7 +1238,8 @@ if __name__ == '__main__':
                 continue
             else:
                 orders, last_price, volume, isolated_margin_volume, buy_unix_time = buy(custom_pair_name=custom_pair_name)
-                update_portfolio(orders, last_price, volume, isolated_margin_volume, buy_unix_time)
+                if not coins_bought: # only for one coin pair
+                    update_portfolio(orders, last_price, volume, isolated_margin_volume, buy_unix_time)
                 # coins_sold = sell_coins(coins_close_manually=coins_close_manually)
                 last_coin_pair_name, coins_sold = sell_coins()
                 if last_coin_pair_name:

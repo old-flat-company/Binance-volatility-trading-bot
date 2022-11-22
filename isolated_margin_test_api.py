@@ -176,7 +176,7 @@ def activate_or_enable_isolated_margin_account(symbol=''):
         return enable_isolated_margin_account(symbol=symbol)
 
 
-def get_sma(symbol='', period=7, interval=Client.KLINE_INTERVAL_1MINUTE):
+def get_sma(symbol='', period=7, interval=Client.KLINE_INTERVAL_1MINUTE, depth=0):
     """
     https://python-binance.readthedocs.io/en/latest/binance.html?highlight=get_historical_klines#binance.client.Client.get_historical_klines
     # list of OHLCV values (Open time, Open, High, Low, Close, Volume, Close time, Quote asset volume, Number of trades, Taker buy base asset volume, Taker buy quote asset volume, Ignore)
@@ -184,19 +184,55 @@ def get_sma(symbol='', period=7, interval=Client.KLINE_INTERVAL_1MINUTE):
     klines = client.get_historical_klines(symbol,  interval, '1 hour ago UTC')
     # print(klines)
     #last candles(period)data
-    period_klines=klines[-(period):]
+    if depth == 0:
+        period_klines = klines[-(period):]
+    else:
+        period_klines = klines[-(period) - depth:-depth]
     period_klines_close_data = [float(kline_data[4]) for kline_data in period_klines]
     # print(period_klines_close_data)
     return sum(period_klines_close_data)/period
 
 
-
-
+def sma_based_buy_sell_signal(symbol='', interval=Client.KLINE_INTERVAL_1MINUTE):
+    klines_data = client.get_historical_klines(symbol, interval, '1 hour ago UTC')
+    curr_price = float(klines_data[-2][4])
+    price_prev = float(klines_data[-3][4])
+    curr_sma = get_sma(symbol=symbol, depth=1)
+    sma_prev = get_sma(symbol=symbol, depth=2)
+    # buy
+    if curr_price == curr_sma and price_prev == sma_prev:
+        return False
+    elif curr_price >= curr_sma and price_prev <= sma_prev:
+        return 'buy'
+    elif curr_price <= curr_sma and price_prev >= sma_prev:
+        return 'sell'
+    else:
+        return False
 
 if __name__ == '__main__':
     # activate_or_enable_isolated_margin_account(symbol='PUNDIXUSDT')
     # pass
-    print(get_sma(symbol='PUNDIXUSDT'))
+    # print(get_sma(symbol='PUNDIXUSDT'))
+    while True:
+        print(sma_based_buy_sell_signal(symbol='BNBUSDT'))
+        print(datetime.now().strftime("%d/%m %H:%M:%S"))
+        time.sleep(5)
+
+        # klines_data = client.get_historical_klines('BNBUSDT', Client.KLINE_INTERVAL_1MINUTE, '1 hour ago UTC')
+        # curr_price = float(klines_data[-1][4])
+        # price_prev = float(klines_data[-2][4])
+        # curr_sma = get_sma(symbol='BNBUSDT')
+        # sma_prev = get_sma(symbol='BNBUSDT', depth=1)
+        #
+        # print('curr_price', curr_price)
+        # print('price_prev', price_prev)
+        # print('curr_sma', curr_sma)
+        # print('sma_prev', sma_prev)
+        # time.sleep(5)
+
+
+
+
 
     # Your request is no longer supported. Margin account creation can be completed directly through Margin account transfer.
     # create_isolated_margin_account()

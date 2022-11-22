@@ -299,7 +299,7 @@ def table_margin_buy_sell_custom_signal_set_default_value(conn=None):
         return False
 
 
-def table_margin_buy_sell_custom_signal_write_data(conn=None,**kwargs):
+def table_margin_buy_sell_custom_signal_write_data(conn=None, **kwargs):
 
     '''
     :param conn:  DB connection object

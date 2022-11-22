@@ -353,6 +353,8 @@ def core_spot_buy(coin=None, volume=None, isolated_margin_volume=None, orders=No
             if LOG_TRADES:
                 write_log(f"Buy : {volume[coin]} {coin} - {last_price[coin]['price']}")
             isolated_margin_volume[coin] = ''
+            table_margin_buy_sell_custom_signal_write_data(conn=connect,
+                                                           buy_time=datetime.now().strftime("%d/%m %H:%M:%S"))
             return True
     except Exception as e:
         print(e)
@@ -437,6 +439,8 @@ def core_isolated_margin_buy(coin=None, isolated_margin_volume=None, orders=None
                 time.sleep(1)
             else:
                 print('Margin order returned, saving order to file')
+                table_margin_buy_sell_custom_signal_write_data(conn=connect,
+                                                               buy_time=datetime.now().strftime("%d/%m %H:%M:%S"))
                 # Log trade
                 if LOG_TRADES:
                     write_log(f"Buy (margin account): {isolated_margin_volume[coin]} {coin} - {last_price[coin]['price']}")
